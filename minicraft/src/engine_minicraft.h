@@ -17,6 +17,12 @@ private:
 	GLuint shaderColorLocation;
 
 	YColor sunColor;
+	YColor skyColor;
+
+	float rotationValue;
+
+	YVec3f sunPosition;
+	YVec3f sunDirection;
 public :
 	//Gestion singleton
 	static YEngine * getInstance()
@@ -41,27 +47,13 @@ public :
 		Renderer->Camera->setPosition(YVec3f(10, 10, 10));
 		Renderer->Camera->setLookAt(YVec3f());
 		
-		cubeLel = new YVbo(3, 36, YVbo::PACK_BY_ELEMENT_TYPE);
-		cubeLel->setElementDescription(0, YVbo::Element(3));
-		cubeLel->setElementDescription(1, YVbo::Element(3));
-		cubeLel->setElementDescription(2, YVbo::Element(2));
-
-		cubeLel->createVboCpu();
-
-		fillVBOCube(cubeLel);
+		cubeLel = createGPUCube();
 		//glDisable(GL_CULL_FACE);
 
 		
 		ShaderCubeDebug = Renderer->createProgram("shaders/cube_debug");
 
-		sun = new YVbo(3, 36, YVbo::PACK_BY_ELEMENT_TYPE);
-		sun->setElementDescription(0, YVbo::Element(3));
-		sun->setElementDescription(1, YVbo::Element(3));
-		sun->setElementDescription(2, YVbo::Element(2));
-
-		sun->createVboCpu();
-
-		fillVBOCube(sun, 1.f);
+		sun = createGPUCube();
 
 		ShaderSun = Renderer->createProgram("shaders/sun");
 		shaderColorLocation = glGetUniformLocation(ShaderSun, "sun_color");
@@ -73,7 +65,7 @@ public :
 		//sunColor.interpolate()
 	}
 
-	int addQuadToVbo(YVbo* vbo, int iVertice, YVec3f& a, YVec3f& b, YVec3f& c, YVec3f& d)
+	/*int addQuadToVbo(YVbo* vbo, int iVertice, YVec3f& a, YVec3f& b, YVec3f& c, YVec3f& d)
 	{
 		YVec3f normal = (b - a).cross(d - a);
 		normal.normalize();
@@ -136,7 +128,7 @@ public :
 		iVertice += addQuadToVbo(vbo, iVertice, e, a, d, h); //y-
 		iVertice += addQuadToVbo(vbo, iVertice, c, g, h, d); //z+
 		iVertice += addQuadToVbo(vbo, iVertice, e, f, b, a); //z-
-	}
+	}*/
 
 
 	YVbo* createGPUCube() {
@@ -327,9 +319,81 @@ public :
 		return VboCube;
 	}
 
+	bool getSunDirFromDayTime(YVec3f& sunDir, float mnLever, float mnCoucher, float boostTime)
+	{
+		bool nuit = false;
+
+		SYSTEMTIME t;
+		GetLocalTime(&t);
+
+		//On borne le tweak time à une journée (cyclique)
+		while (boostTime > 24 * 60)
+			boostTime -= 24 * 60;
+
+		//Temps écoulé depuis le début de la journée
+		float fTime = (float)(t.wHour * 60 + t.wMinute);
+		fTime += boostTime;
+		while (fTime > 24 * 60)
+			fTime -= 24 * 60;
+
+		//Si c'est la nuit
+		if (fTime < mnLever || fTime > mnCoucher)
+		{
+			nuit = true;
+			if (fTime < mnLever)
+				fTime += 24 * 60;
+			fTime -= mnCoucher;
+			fTime /= (mnLever + 24 * 60 - mnCoucher);
+			fTime *= (float)M_PI;
+		}
+		else
+		{
+			//c'est le jour
+			nuit = false;
+			fTime -= mnLever;
+			fTime /= (mnCoucher - mnLever);
+			fTime *= (float)M_PI;
+		}
+
+		//Direction du soleil en fonction de l'heure
+		sunDir.X = cos(fTime);
+		sunDir.Y = 0.2f;
+		sunDir.Z = sin(fTime);
+		sunDir.normalize();
+
+		return nuit;
+	}
+
+	void updateLights(float boostTime = 0)
+	{
+		//On recup la direciton du soleil
+		bool nuit = getSunDirFromDayTime(sunDirection, 6.0f * 60.0f, 19.0f * 60.0f, boostTime);
+		sunPosition = sunDirection * 2;
+
+		//Pendant la journée
+		if (!nuit)
+		{
+			//On definit la couleur
+			sunColor = YColor(1.0f, 1.0f, 0.8f, 1.0f);
+			skyColor = YColor(0.0f, 181.f / 255.f, 221.f / 255.f, 1.0f);
+			YColor downColor(0.9f, 0.5f, 0.1f, 1);
+
+			sunColor = sunColor.interpolate(downColor, (abs(sunDirection.X)));
+			skyColor = skyColor.interpolate(downColor, (abs(sunDirection.X)));
+		}
+		else
+		{
+			//La nuit : lune blanche et ciel noir
+			sunColor = YColor(1, 1, 1, 1);
+			skyColor = YColor(0, 0, 0, 1);
+		}
+
+		Renderer->setBackgroundColor(skyColor);
+	}
+
 	void update(float elapsed) 
 	{
-			
+		updateLights(DeltaTimeCumul * 100);
 	}
 
 	void renderObjects() 
@@ -349,9 +413,10 @@ public :
 		glVertex3d(0, 0, 10000);
 		glEnd();		
 
-
-
-		glRotatef(this->DeltaTimeCumul / 10.0f * 360, -1, 1, 0);
+		
+		glPushMatrix();
+		
+		glTranslatef(sunPosition.X, sunPosition.Y, sunPosition.Z);
 
 		//Exemple d'utilisation d'un shader
 		glUseProgram(ShaderCubeDebug); //Demande au GPU de charger ces shaders
@@ -366,6 +431,8 @@ public :
 		glUniform3f(shaderColorLocation, sunColor.R, sunColor.V, sunColor.B);
 			//Envoie les matrices au shader
 		sun->render();
+
+		glPopMatrix();
 
 	}
 
