@@ -343,7 +343,7 @@ public :
 			if (fTime < mnLever)
 				fTime += 24 * 60;
 			fTime -= mnCoucher;
-			fTime /= (mnLever + 24 * 60 - mnCoucher);
+			fTime /= (mnLever + 24 * 60 - mnCoucher); // divise par le temps total de jour (levé)
 			fTime *= (float)M_PI;
 		}
 		else
