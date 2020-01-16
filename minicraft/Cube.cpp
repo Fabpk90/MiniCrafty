@@ -198,4 +198,14 @@ Cube::Cube(YVec3f position, float size, YColor color, const char* shaderPath)
 Cube::~Cube()
 {
 	glDeleteProgram(shaderId);
+	delete vbo;
+}
+
+void Cube::draw()
+{
+	auto renderer = MEngineMinicraft::getInstance()->Renderer;
+	glUseProgram(shaderId); //Demande au GPU de charger ces shaders
+	renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
+	renderer->sendMatricesToShader(shaderId); //Envoie les matrices au shader
+	vbo->render(); //Demande le rendu du VBO
 }

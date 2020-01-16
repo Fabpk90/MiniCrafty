@@ -28,12 +28,14 @@
     <ClInclude Include="src\cube.h" />
     <ClInclude Include="src\engine_minicraft.h" />
     <ClInclude Include="src\world.h" />
+    <ClInclude Include="Sun.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\engine\render\fbo.cpp" />
     <ClCompile Include="..\src\engine\render\vbo.cpp" />
     <ClCompile Include="Cube.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="run\shaders\birds\fs.glsl" />

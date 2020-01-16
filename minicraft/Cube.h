@@ -16,7 +16,9 @@ private:
 	void createVBO();
 
 public:
-	Cube(YVec3f position, float size, YColor color, const char* shaderPath);
+	Cube(YVec3f position = YVec3f(0, 0, 0), float size = 1.0f, YColor color = YColor(1.0f, 1.0f, 1.0f, 1.0f) , const char* shaderPath = "shaders/cube_debug");
 	~Cube();
+
+	virtual void draw() override;
 };
 
