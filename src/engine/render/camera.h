@@ -10,25 +10,25 @@ public:
 		PROJECTION_PERSPECTIVE
 	} PROJTYPE;
 
-	
-	YVec3<float> Position; ///< Position de la camera
-	YVec3<float> LookAt; ///< Point regarde par la camera
-	YVec3<float> Direction; ///< Direction de la camera
-	YVec3<float> UpVec; ///< Vecteur up de la camera
-	YVec3<float> RightVec; ///< Si on se place dans la camera, indique la droite	
-	YVec3<float> UpRef; ///< Ce qu'on considère comme le "haut" dans notre monde (et pas le up de la cam)
-	
 
-	PROJTYPE ProjType; ///< Type de projection
-	float FovY; ///< fov angle sur y in degrees
-	float Ratio; ///< with / height
-	float Left; ///< Left YPlane
+	YVec3<float> Position; ///Position de la camera
+	YVec3<float> LookAt; ///Point regarde par la camera
+	YVec3<float> Direction; ///Direction de la camera
+	YVec3<float> UpVec; ///Vecteur up de la camera
+	YVec3<float> RightVec; ///Si on se place dans la camera, indique la droite	
+	YVec3<float> UpRef; ///Ce qu'on considère comme le "haut" dans notre monde (et pas le up de la cam)
+
+
+	PROJTYPE ProjType; /// Type de projection
+	float FovY; /// fov angle sur y in degrees
+	float Ratio; /// with / height
+	float Left; /// Left YPlane
 	float Right;
 	float Bottom;
 	float Top;
 	float Near;
 	float Far;
-			
+
 	YCamera()
 	{
 		Position = YVec3<float>(0, -1, 0);
@@ -102,15 +102,22 @@ public:
 	*/
 	void move(YVec3<float> delta)
 	{
-		
+		Position += Direction * delta.X;
+		Position += RightVec * delta.Y;
+		Position += UpVec * delta.Z;
+
+		LookAt = Position;
+		LookAt += Direction * 2.f;
+
+		updateVecs();
 	}
 
 	/**
 	* Deplacement de la camera à un point donné
 	*/
-	void moveTo(const YVec3<float> & target)
+	void moveTo(const YVec3<float>& target)
 	{
-		
+		Position += target;
 	}
 
 	/**
@@ -122,7 +129,9 @@ public:
 	*/
 	void updateVecs(void)
 	{
-		
+		Direction = (LookAt - Position).normalize();
+		RightVec = Direction.cross(UpRef).normalize();
+		UpVec = RightVec.cross(Direction).normalize();
 	}
 
 	/**
@@ -130,7 +139,11 @@ public:
 	*/
 	void rotate(float angle)
 	{
-		
+		Direction.rotate(UpVec, angle);
+		LookAt = Position + (Direction * 2.0f);
+
+		RightVec = Direction.cross(UpRef).normalize();
+		UpVec = RightVec.cross(Direction).normalize();
 	}
 
 	/**
@@ -138,7 +151,11 @@ public:
 	*/
 	void rotateUp(float angle)
 	{
-		
+		Direction.rotate(RightVec, angle);
+		LookAt = Position + (Direction * 2.0f);
+
+		RightVec = Direction.cross(UpRef).normalize();
+		UpVec = RightVec.cross(Direction).normalize();
 	}
 
 	/**
@@ -146,7 +163,11 @@ public:
 	*/
 	void rotateAround(float angle)
 	{
-		
+		YVec3f dir = Position - LookAt;
+		dir.rotate(UpVec, -angle);
+
+		Position = LookAt + dir;
+		updateVecs();
 	}
 
 	/**
@@ -154,7 +175,11 @@ public:
 	*/
 	void rotateUpAround(float angle)
 	{
-		
+		YVec3f dir = Position - LookAt;
+		dir.rotate(RightVec, -angle);
+
+		Position = LookAt + dir;
+		updateVecs();
 	}
 
 	/**
@@ -170,10 +195,10 @@ public:
 		if (ProjType == PROJECTION_ORTHO) {
 			glOrtho(Left, Right, Bottom, Top, Near, Far);
 		}
-		
+
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		gluLookAt(Position.X, Position.Y, Position.Z, LookAt.X, LookAt.Y, LookAt.Z, UpVec.X, UpVec.Y, UpVec.Z);
-		
+
 	}
 };

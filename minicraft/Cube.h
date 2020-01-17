@@ -1,10 +1,12 @@
 #pragma once
-#include <engine\utils\types_3d.h>
-#include <gl\GL.h>
 
 #include "Renderable.h"
+#include "external/gl/glew.h"
+#include <engine\utils\types_3d.h>
+#include <engine/render/vbo.h>
 
-class Cube : Renderable
+
+class Cube : public Renderable
 {
 private:
 	float size;
@@ -16,9 +18,11 @@ private:
 	void createVBO();
 
 public:
-	Cube(YVec3f position = YVec3f(0, 0, 0), float size = 1.0f, YColor color = YColor(1.0f, 1.0f, 1.0f, 1.0f) , const char* shaderPath = "shaders/cube_debug");
+	Cube(YVec3f position = YVec3f(0, 0, 0), float size = 1.0f, YColor color = YColor(1.0f, 1.0f, 1.0f, 1.0f) , const char* shaderPath = "shaders/cube");
 	~Cube();
 
-	virtual void draw() override;
+	YVbo* GetVbo() { return vbo; }
+
+	virtual void render() override;
 };
 

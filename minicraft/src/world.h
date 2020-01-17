@@ -6,6 +6,7 @@
 #include "engine/utils/types_3d.h"
 #include "cube.h"
 #include "chunk.h"
+#include "engine/noise/perlin.h"
 
 class MWorld
 {
@@ -28,9 +29,15 @@ public :
 	static const int MAT_HEIGHT_METERS = (MAT_HEIGHT * MChunk::CHUNK_SIZE  * MCube::CUBE_SIZE);
 
 	MChunk * Chunks[MAT_SIZE][MAT_SIZE][MAT_HEIGHT];
+
+	YPerlin* noise;
 	
 	MWorld()
 	{
+
+		noise = new YPerlin();
+		noise->setFreq(0.2f);
+
 		//On crée les chunks
 		for(int x=0;x<MAT_SIZE;x++)
 			for(int y=0;y<MAT_SIZE;y++)
@@ -117,6 +124,21 @@ public :
 
 		//Générer ici le monde en modifiant les cubes
 		//Utiliser getCubes() 
+
+		for (int x = 0; x < MAT_SIZE_CUBES; x++)
+			for (int y = 0; y < MAT_SIZE_CUBES; y++)
+				for (int z = 0; z < MAT_HEIGHT_CUBES; z++)
+				{
+					auto cube = getCube(x, y, z);
+					
+					float perlin = noise->sample(x, y, z);
+
+					if (perlin >= 0.65f)
+					{
+						cube->setType(MCube::CUBE_TERRE);
+					}
+					
+				}
 
 		for(int x=0;x<MAT_SIZE;x++)
 			for(int y=0;y<MAT_SIZE;y++)
@@ -338,7 +360,36 @@ public :
 		
 	void render_world_basic(GLuint shader, YVbo * vboCube) 
 	{
-		
+		glUseProgram(shader);
+
+		for (int i = 0; i < MAT_SIZE_CUBES; i++)
+		{
+			for (int j = 0; j < MAT_SIZE_CUBES; j++)
+			{
+				for (int z = 0; z < MAT_HEIGHT_CUBES; z++)
+				{
+					auto cube = getCube(i, j, z);
+					
+					if (cube->getType() != MCube::CUBE_AIR)
+					{
+						glPushMatrix();
+
+						glTranslatef(i, j, z);
+						GLuint var = glGetUniformLocation(shader, "cube_color");
+						glUniform3f(var, 0.5, 0.5f, 0.5f);
+
+						YEngine::getInstance()->Renderer->updateMatricesFromOgl();
+						YEngine::getInstance()->Renderer->sendMatricesToShader(shader);
+
+						vboCube->render();
+
+						glPopMatrix();
+					}
+
+					
+				}
+			}
+		}
 	}
 
 	void render_world_vbo(bool debug,bool doTransparent)

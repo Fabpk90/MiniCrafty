@@ -201,7 +201,7 @@ Cube::~Cube()
 	delete vbo;
 }
 
-void Cube::draw()
+void Cube::render()
 {
 	auto renderer = MEngineMinicraft::getInstance()->Renderer;
 	glUseProgram(shaderId); //Demande au GPU de charger ces shaders

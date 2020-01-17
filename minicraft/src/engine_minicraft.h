@@ -6,11 +6,13 @@
 #include "avatar.h"
 #include "world.h"
 #include <sysinfoapi.h>
+#include "../Cube.h"
+#include "world.h"
 
 class MEngineMinicraft : public YEngine {
 private:
-	Cube cubeLel;
-	Cube sun;
+	Cube* cubeLel;
+	Cube* sun;
 
 	GLuint ShaderCubeDebug;
 	GLuint ShaderSun;
@@ -23,6 +25,13 @@ private:
 
 	YVec3f sunPosition;
 	YVec3f sunDirection;
+
+	bool isRightClicking = false;
+	bool isCtrling = false;
+	bool isMiddleClicking = false;
+
+	MWorld* world;
+
 public :
 	//Gestion singleton
 	static YEngine * getInstance()
@@ -47,21 +56,20 @@ public :
 		Renderer->Camera->setPosition(YVec3f(10, 10, 10));
 		Renderer->Camera->setLookAt(YVec3f());
 		
-		cubeLel = Cube();
+		cubeLel = new Cube();
 		//glDisable(GL_CULL_FACE);
 
 		
 
-		sun = createGPUCube();
+		sun = new Cube();
 
 		ShaderSun = Renderer->createProgram("shaders/sun");
 		shaderColorLocation = glGetUniformLocation(ShaderSun, "sun_color");
 
 		sunColor = YColor(1.0f, 1.0f, 0.0f, 1.0f);
-		SYSTEMTIME s;
-		GetLocalTime(&s);
 
-		//sunColor.interpolate()
+		world = new MWorld();
+		world->init_world(0);
 	}
 
 
@@ -178,6 +186,8 @@ public :
 
 		glPopMatrix();
 
+		world->render_world_basic(ShaderSun, cubeLel->GetVbo());
+
 	}
 
 	void resize(int width, int height) {
@@ -186,24 +196,104 @@ public :
 
 	/*INPUTS*/
 
-	void keyPressed(int key, bool special, bool down, int p1, int p2) 
-	{	
+	void keyPressed(int key, bool special, bool down, int p1, int p2)
+	{
+		YVec3f movementVector = YVec3f();
+		switch (key)
+		{
+		case 122: // z
+			movementVector.X = DeltaTime * 10;
+			break;
 
+		case 113: //q
+			movementVector.Y = -DeltaTime * 10;
+			break;
+
+		case 115: // s
+			movementVector.X = -DeltaTime * 10;
+			break;
+		case 100: //d
+			movementVector.Y = DeltaTime * 10;
+			break;
+
+		case GLUT_KEY_CTRL_L:
+			isCtrling = down;
+			break;
+		default:
+			break;
+		}
+
+		Renderer->Camera->move(movementVector);
 	}
 
 	void mouseWheel(int wheel, int dir, int x, int y, bool inUi)
 	{
-		
+		//3 avant
+		//4 arrière
+
+		auto fov = Renderer->Camera->FovY;
+		if (wheel == 2)
+		{
+			fov += DeltaTime * 100.0f;
+		}
+		else if (wheel == 3)
+		{
+			fov -= DeltaTime * 100.0f;
+		}
+
+
+		if (fov < 90.0f && fov > 45.0f)
+			Renderer->Camera->FovY = fov;
+
 	}
 
 	void mouseClick(int button, int state, int x, int y, bool inUi)
 	{
-		
+		isRightClicking = button == 2 && state == 0;
+		isMiddleClicking = button == 1 && state == 0;
+
+		if (isRightClicking || isMiddleClicking)
+		{
+			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
+		}
 	}
 
 	void mouseMove(int x, int y, bool pressed, bool inUi)
 	{
-		
+		int deltaX, deltaY;
+
+		deltaX = (BaseWidth >> 1) - x;
+		deltaY = (BaseHeight >> 1) - y;
+
+		if (isRightClicking)
+		{
+			if (isCtrling)
+			{
+				Renderer->Camera->rotateAround((deltaX / 400.0f));
+				Renderer->Camera->rotateUpAround(deltaY / 400.0f);
+			}
+			else
+			{
+				Renderer->Camera->rotate((deltaX / 400.0f));
+				Renderer->Camera->rotateUp(deltaY / 400.0f);
+			}
+
+			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
+		}
+		else if (isMiddleClicking)
+		{
+			if (isCtrling)
+			{
+				Renderer->Camera->moveTo(YVec3f(deltaY / 400.0f, deltaX / 400.0, 0));
+			}
+			else
+			{
+				Renderer->Camera->move(YVec3f(deltaY / 400.0f, deltaX / 400.0f, 0));
+			}
+
+			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
+		}
+
 	}
 	
 };
