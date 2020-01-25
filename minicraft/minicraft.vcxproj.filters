@@ -42,6 +42,9 @@
     <Filter Include="Fichiers d%27en-tête\engine\render">
       <UniqueIdentifier>{75d7c323-8b30-4ce8-97d7-f825373fcbfa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Fichiers d%27en-tête\engine\utils">
+      <UniqueIdentifier>{0ec6154f-f060-4846-bf43-162407ddef1b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine_minicraft.h">
@@ -90,6 +93,9 @@
     </ClCompile>
     <ClCompile Include="Sun.cpp">
       <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\engine\utils\utils.cpp">
+      <Filter>Fichiers d%27en-tête\engine\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

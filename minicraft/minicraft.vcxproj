@@ -33,6 +33,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\engine\render\fbo.cpp" />
     <ClCompile Include="..\src\engine\render\vbo.cpp" />
+    <ClCompile Include="..\src\engine\utils\utils.cpp" />
     <ClCompile Include="Cube.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="Sun.cpp" />

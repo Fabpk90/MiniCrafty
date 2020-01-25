@@ -5,14 +5,13 @@
 
 #include "avatar.h"
 #include "world.h"
-#include <sysinfoapi.h>
-#include "../Cube.h"
+#include <windows.h>
 #include "world.h"
 
 class MEngineMinicraft : public YEngine {
 private:
-	Cube* cubeLel;
-	Cube* sun;
+
+	YVbo* vbo;
 
 	GLuint ShaderCubeDebug;
 	GLuint ShaderSun;
@@ -30,7 +29,14 @@ private:
 	bool isCtrling = false;
 	bool isMiddleClicking = false;
 
+	bool isZing;
+	bool isSing;
+	bool isQing;
+	bool isDing;
+
 	MWorld* world;
+
+	GUILabel* camPosition;
 
 public :
 	//Gestion singleton
@@ -48,6 +54,193 @@ public :
 		
 	}
 
+	YVbo* createVBO()
+	{
+		// Creation du VBO
+		auto vbo = new YVbo(3, 36, YVbo::PACK_BY_ELEMENT_TYPE);
+
+		// Définition du contenu VBO
+		vbo->setElementDescription(0, YVbo::Element(3)); //Sommet
+		vbo->setElementDescription(1, YVbo::Element(3)); //Normale
+		vbo->setElementDescription(2, YVbo::Element(2)); //UV
+
+		vbo->createVboCpu();
+
+		// On ajoute les sommets
+		int iVertice = 0;
+
+		// Surface 1
+		vbo->setElementValue(0, iVertice, 0, 0, 0);
+		vbo->setElementValue(1, iVertice, 0, -1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 0, 0);
+		vbo->setElementValue(1, iVertice, 0, -1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 0, 1);
+		vbo->setElementValue(1, iVertice, 0, -1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		// Surface 1
+		vbo->setElementValue(0, iVertice, 1, 0, 0);
+		vbo->setElementValue(1, iVertice, 0, -1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 0, 1);
+		vbo->setElementValue(1, iVertice, 0, -1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 0, 1);
+		vbo->setElementValue(1, iVertice, 0, -1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+
+		// Surface 2
+		vbo->setElementValue(0, iVertice, 0, 0, 0);
+		vbo->setElementValue(1, iVertice, -1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 0, 1);
+		vbo->setElementValue(1, iVertice, -1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 0);
+		vbo->setElementValue(1, iVertice, -1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		// Surface 2
+		vbo->setElementValue(0, iVertice, 0, 1, 0);
+		vbo->setElementValue(1, iVertice, -1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 0, 1);
+		vbo->setElementValue(1, iVertice, -1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 1);
+		vbo->setElementValue(1, iVertice, -1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+
+
+		// Surface 3
+		vbo->setElementValue(0, iVertice, 0, 0, 0);
+		vbo->setElementValue(1, iVertice, 0, 0, -1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 0);
+		vbo->setElementValue(1, iVertice, 0, 0, -1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 0, 0);
+		vbo->setElementValue(1, iVertice, 0, 0, -1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		// Surface 3
+		vbo->setElementValue(0, iVertice, 1, 0, 0);
+		vbo->setElementValue(1, iVertice, 0, 0, -1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 0);
+		vbo->setElementValue(1, iVertice, 0, 0, -1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 1, 0);
+		vbo->setElementValue(1, iVertice, 0, 0, -1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+
+
+		// Surface 1
+		vbo->setElementValue(0, iVertice, 1, 1, 0);
+		vbo->setElementValue(1, iVertice, 0, 1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 0);
+		vbo->setElementValue(1, iVertice, 0, 1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 1);
+		vbo->setElementValue(1, iVertice, 0, 1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		// Surface 1
+		vbo->setElementValue(0, iVertice, 0, 1, 1);
+		vbo->setElementValue(1, iVertice, 0, 1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 1, 1);
+		vbo->setElementValue(1, iVertice, 0, 1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 1, 0);
+		vbo->setElementValue(1, iVertice, 0, 1, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+
+
+		// Surface 2
+		vbo->setElementValue(0, iVertice, 1, 0, 0);
+		vbo->setElementValue(1, iVertice, 1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 1, 0);
+		vbo->setElementValue(1, iVertice, 1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 0, 1);
+		vbo->setElementValue(1, iVertice, 1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		// Surface 2
+		vbo->setElementValue(0, iVertice, 1, 1, 0);
+		vbo->setElementValue(1, iVertice, 1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 1, 1);
+		vbo->setElementValue(1, iVertice, 1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 0, 1);
+		vbo->setElementValue(1, iVertice, 1, 0, 0);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+
+
+		// Surface 3
+		vbo->setElementValue(0, iVertice, 0, 0, 1);
+		vbo->setElementValue(1, iVertice, 0, 0, 1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 0, 1);
+		vbo->setElementValue(1, iVertice, 0, 0, 1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 1);
+		vbo->setElementValue(1, iVertice, 0, 0, 1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		// Surface 3
+		vbo->setElementValue(0, iVertice, 1, 0, 1);
+		vbo->setElementValue(1, iVertice, 0, 0, 1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 1, 1, 1);
+		vbo->setElementValue(1, iVertice, 0, 0, 1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+		vbo->setElementValue(0, iVertice, 0, 1, 1);
+		vbo->setElementValue(1, iVertice, 0, 0, 1);
+		vbo->setElementValue(2, iVertice, 0, 0);
+		++iVertice;
+
+		// On envoie le contenu au GPU
+		vbo->createVboGpu();
+
+		return vbo;
+	}
+
 	void init() 
 	{
 		YLog::log(YLog::ENGINE_INFO,"Minicraft Started : initialisation");
@@ -55,13 +248,8 @@ public :
 		Renderer->setBackgroundColor(YColor(0.0f,0.0f,0.0f,1.0f));
 		Renderer->Camera->setPosition(YVec3f(10, 10, 10));
 		Renderer->Camera->setLookAt(YVec3f());
-		
-		cubeLel = new Cube();
-		//glDisable(GL_CULL_FACE);
 
-		
-
-		sun = new Cube();
+		vbo = createVBO();
 
 		ShaderSun = Renderer->createProgram("shaders/sun");
 		shaderColorLocation = glGetUniformLocation(ShaderSun, "sun_color");
@@ -70,6 +258,21 @@ public :
 
 		world = new MWorld();
 		world->init_world(0);
+		camPosition = new GUILabel();
+		auto pos = Renderer->Camera->Position;
+		camPosition->Text.clear();
+		camPosition->Text.append(std::to_string(pos.X));
+		camPosition->Text.append(" ");
+
+		camPosition->Text.append(std::to_string(pos.Y));
+		camPosition->Text.append(" ");
+
+		camPosition->Text.append(std::to_string(pos.Z));
+		camPosition->Text.append(" ");
+
+		camPosition->X = 150;
+
+		this->ScreenStats->addElement(camPosition);
 	}
 
 
@@ -146,9 +349,43 @@ public :
 		Renderer->setBackgroundColor(skyColor);
 	}
 
+	void CheckForInputs()
+	{
+		YVec3f movementVector = YVec3f();
+		if(isZing)
+			movementVector.X = DeltaTime * 10;
+		else if (isSing)
+			movementVector.X = -DeltaTime * 10;
+		if(isQing)
+			movementVector.Y = -DeltaTime * 10;
+		else if(isDing)
+			movementVector.Y = DeltaTime * 10;
+
+		Renderer->Camera->move(movementVector);
+	}
+
 	void update(float elapsed) 
 	{
-		updateLights(DeltaTimeCumul * 100);
+		updateLights();
+		
+
+		if (ScreenStats->_Active)
+		{
+			auto pos = Renderer->Camera->Position;
+			camPosition->Text.clear();
+			camPosition->Text.append(std::to_string(pos.X));
+			camPosition->Text.append(" ");
+
+			camPosition->Text.append(std::to_string(pos.Y));
+			camPosition->Text.append(" ");
+
+			camPosition->Text.append(std::to_string(pos.Z));
+			camPosition->Text.append(" ");
+		}
+		
+		CheckForInputs();
+
+		world->update();
 	}
 
 	void renderObjects() 
@@ -173,20 +410,16 @@ public :
 		
 		glTranslatef(sunPosition.X, sunPosition.Y, sunPosition.Z);
 
-		//Exemple d'utilisation d'un shader
-		
-
-
 		glUseProgram(ShaderSun); //Demande au GPU de charger ces shaders
 		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
 		Renderer->sendMatricesToShader(ShaderSun);
 		glUniform3f(shaderColorLocation, sunColor.R, sunColor.V, sunColor.B);
 			//Envoie les matrices au shader
-		sun->render();
+		vbo->render();
 
 		glPopMatrix();
 
-		world->render_world_basic(ShaderSun, cubeLel->GetVbo());
+		world->render_world_vbo(true, true);
 
 	}
 
@@ -198,22 +431,21 @@ public :
 
 	void keyPressed(int key, bool special, bool down, int p1, int p2)
 	{
-		YVec3f movementVector = YVec3f();
 		switch (key)
 		{
 		case 122: // z
-			movementVector.X = DeltaTime * 10;
+			isZing = down;
 			break;
 
 		case 113: //q
-			movementVector.Y = -DeltaTime * 10;
+			isQing = down;
 			break;
 
 		case 115: // s
-			movementVector.X = -DeltaTime * 10;
+			isSing = down;
 			break;
 		case 100: //d
-			movementVector.Y = DeltaTime * 10;
+			isDing = down;
 			break;
 
 		case GLUT_KEY_CTRL_L:
@@ -222,8 +454,6 @@ public :
 		default:
 			break;
 		}
-
-		Renderer->Camera->move(movementVector);
 	}
 
 	void mouseWheel(int wheel, int dir, int x, int y, bool inUi)
@@ -254,6 +484,7 @@ public :
 
 		if (isRightClicking || isMiddleClicking)
 		{
+			showMouse(false);
 			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
 		}
 	}
@@ -264,6 +495,8 @@ public :
 
 		deltaX = (BaseWidth >> 1) - x;
 		deltaY = (BaseHeight >> 1) - y;
+
+		showMouse(true);
 
 		if (isRightClicking)
 		{
@@ -278,6 +511,7 @@ public :
 				Renderer->Camera->rotateUp(deltaY / 400.0f);
 			}
 
+			showMouse(false);
 			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
 		}
 		else if (isMiddleClicking)
@@ -290,7 +524,7 @@ public :
 			{
 				Renderer->Camera->move(YVec3f(deltaY / 400.0f, deltaX / 400.0f, 0));
 			}
-
+			showMouse(false);
 			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
 		}
 

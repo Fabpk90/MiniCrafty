@@ -7,6 +7,8 @@
 #include "cube.h"
 #include "chunk.h"
 #include "engine/noise/perlin.h"
+#include <thread>
+#include <mutex>
 
 class MWorld
 {
@@ -17,7 +19,7 @@ public :
 	static const int AXIS_Z = 0b00000100;
 
 	#ifdef _DEBUG
-	static const int MAT_SIZE = 1; //en nombre de chunks
+	static const int MAT_SIZE = 5; //en nombre de chunks
 	#else
 	static const int MAT_SIZE = 3; //en nombre de chunks
 	#endif // DEBUG
@@ -31,12 +33,30 @@ public :
 	MChunk * Chunks[MAT_SIZE][MAT_SIZE][MAT_HEIGHT];
 
 	YPerlin* noise;
+
+	GLuint shaderProgram;
+
+	YTexFile* texture;
+	std::thread chunker1;
+	std::thread chunker2;
+	std::vector<MChunk*> chunkier;
+	std::vector<YVec3f> chunkList;
+
+	std::mutex chunkierMutex;
+	std::mutex chunkListMutex;
+
+	int seed;
 	
 	MWorld()
 	{
-
+		chunkier = std::vector<MChunk*>();
+		chunkList = std::vector<YVec3f>();
+		
+		texture = YTexManager::getInstance()->loadTexture("terrain.png");
 		noise = new YPerlin();
 		noise->setFreq(0.2f);
+
+		shaderProgram = YEngine::getInstance()->Renderer->createProgram("shaders/world");
 
 		//On crée les chunks
 		for(int x=0;x<MAT_SIZE;x++)
@@ -109,12 +129,78 @@ public :
 		cube = getCube(x-1,y,z);
 		updateCube(x,y,z);	
 	}
+
+	void fillChunks()
+	{
+		YPerlin n = YPerlin();
+		n.setFreq(.25f);
+		
+		while(!chunkList.empty())
+		{
+			YVec3f chunkPos = chunkList.front();
+			auto chunk = Chunks[(int)chunkPos.X][(int)chunkPos.Y][(int)chunkPos.Z];
+
+			YLog::log(YLog::ENGINE_INFO, "starting chunk");
+			const int xStart = chunk->_XPos;
+			const int yStart = chunk->_YPos;
+			const int zStart = chunk->_ZPos;
+
+			
+
+			for (int x = MChunk::CHUNK_SIZE * xStart; x < (MChunk::CHUNK_SIZE * xStart) + MChunk::CHUNK_SIZE; x++)
+				for (int y = MChunk::CHUNK_SIZE * yStart; y < (MChunk::CHUNK_SIZE * yStart) + MChunk::CHUNK_SIZE; y++)
+					for (int z = MChunk::CHUNK_SIZE * zStart; z < (MChunk::CHUNK_SIZE * zStart) + MChunk::CHUNK_SIZE; z++)
+					{
+						auto cube = getCube(x, y, z);
+
+						float perlin = n.sample((x % 51) * 0.3f , (y % 51) * 0.6f
+							, (z % 51) * 0.6f);
+
+						if (perlin < 0.15f)
+							cube->setType(MCube::CUBE_PIERRE);
+						if (perlin > 0.41f)
+							cube->setType(MCube::CUBE_TERRE);
+						if (perlin < 0.24 && z <= 0.1)
+							cube->setType(MCube::CUBE_EAU);
+						if (perlin > 0.56)
+							cube->setType(MCube::CUBE_EAU);
+
+					}
+
+			chunk->disableHiddenCubes();
+
+			chunk->toVbos();
+
+			const std::lock_guard<std::mutex> lock(chunkierMutex);
+			chunkier.push_back(chunk);
+
+			const std::lock_guard<std::mutex> lock1(chunkListMutex);
+			chunkList.erase(chunkList.begin());
+		}
+		
+
+		YLog::log(YLog::ENGINE_INFO, "ending thread");
+	}
+
+	void addChunkToGenerate(int x, int y, int z)
+	{
+		const std::lock_guard<std::mutex> lock1(chunkListMutex);
+		chunkList.push_back(YVec3f(x, y, z));
+
+		if(chunker1.joinable())
+		{
+			//chunker1.join();
+			chunker1 = std::thread(&MWorld::fillChunks, this);
+		}
+	}
 			
 	void init_world(int seed)
 	{
 		YLog::log(YLog::USER_INFO,(toString("Creation du monde seed ")+toString(seed)).c_str());
 
 		srand(seed);
+
+		this->seed = seed;
 		
 		//Reset du monde
 		for(int x=0;x<MAT_SIZE;x++)
@@ -123,29 +209,30 @@ public :
 					Chunks[x][y][z]->reset();
 
 		//Générer ici le monde en modifiant les cubes
-		//Utiliser getCubes() 
+		//Utiliser getCubes()
+		for (int x = 0; x < MAT_SIZE; x++)
+			for (int y = 0; y < MAT_SIZE; y++)
+				for (int z = 0; z < MAT_HEIGHT; z++)
+					chunkList.push_back(YVec3f(x, y, z));
+		
+		chunker1 = std::thread(&MWorld::fillChunks, this);
+	}
 
-		for (int x = 0; x < MAT_SIZE_CUBES; x++)
-			for (int y = 0; y < MAT_SIZE_CUBES; y++)
-				for (int z = 0; z < MAT_HEIGHT_CUBES; z++)
-				{
-					auto cube = getCube(x, y, z);
-					
-					float perlin = noise->sample(x, y, z);
+	void update()
+	{
+		//lock the chunkier to see if any vbo is to be added
+		//add the vbo if so
+		const std::lock_guard<std::mutex> lock(chunkierMutex);
 
-					if (perlin >= 0.65f)
-					{
-						cube->setType(MCube::CUBE_TERRE);
-					}
-					
-				}
+		if(!chunkier.empty())
+		{
+			for(MChunk* c : chunkier)
+			{
+				c->sendToGPU();
+			}
 
-		for(int x=0;x<MAT_SIZE;x++)
-			for(int y=0;y<MAT_SIZE;y++)
-				for(int z=0;z<MAT_HEIGHT;z++)
-					Chunks[x][y][z]->disableHiddenCubes();
-
-		add_world_to_vbo();
+			chunkier.clear();
+		}
 	}
 
 	void add_world_to_vbo(void)
@@ -156,6 +243,11 @@ public :
 				{
 					Chunks[x][y][z]->toVbos();
 				}
+	}
+
+	void add_world_to_vbo(int x, int y, int z)
+	{
+		Chunks[x][y][z]->toVbos();
 	}
 	
 	//Boites de collisions plus petites que deux cubes
@@ -370,11 +462,12 @@ public :
 				{
 					auto cube = getCube(i, j, z);
 					
-					if (cube->getType() != MCube::CUBE_AIR)
+					if (cube->getType() != MCube::CUBE_AIR 
+						&& cube->getDraw())
 					{
 						glPushMatrix();
 
-						glTranslatef(i, j, z);
+						glTranslatef(i * MCube::CUBE_SIZE, j * MCube::CUBE_SIZE, z * MCube::CUBE_SIZE);
 						GLuint var = glGetUniformLocation(shader, "cube_color");
 						glUniform3f(var, 0.5, 0.5f, 0.5f);
 
@@ -394,11 +487,43 @@ public :
 
 	void render_world_vbo(bool debug,bool doTransparent)
 	{
+		const std::lock_guard<std::mutex> lock(chunkierMutex);
+		glUseProgram(shaderProgram);
+		
+		texture->setAsShaderInput(shaderProgram);
+		YEngine::getInstance()->Renderer->updateMatricesFromOgl();
+		YEngine::getInstance()->Renderer->sendMatricesToShader(shaderProgram);
+		
+
 		glDisable(GL_BLEND);
 		//Dessiner les chunks opaques
 				
-		glEnable(GL_BLEND);
-		//Dessiner les chunks transparents
+		for (int i = 0; i < MAT_SIZE; i++)
+		{
+			for (int j = 0; j < MAT_SIZE; j++)
+			{
+				for (int k = 0; k < MAT_HEIGHT; k++)
+				{
+					Chunks[i][j][k]->render(false);
+				}
+			}
+		}
+
+		if (doTransparent)
+		{
+			glEnable(GL_BLEND);
+			//Dessiner les chunks transparents
+			for (int i = 0; i < MAT_SIZE; i++)
+			{
+				for (int j = 0; j < MAT_SIZE; j++)
+				{
+					for (int k = 0; k < MAT_HEIGHT; k++)
+					{
+						Chunks[i][j][k]->render(true);
+					}
+				}
+			}
+		}
 	}
 
 	/**

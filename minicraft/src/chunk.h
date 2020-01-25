@@ -12,6 +12,8 @@ class MChunk
 {
 	public :
 
+		bool vboInit;
+
 		static const int CHUNK_SIZE = 64; ///< Taille d'un chunk en nombre de cubes (n*n*n)
 		MCube _Cubes[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE]; ///< Cubes contenus dans le chunk
 
@@ -28,36 +30,210 @@ class MChunk
 			_XPos = x;
 			_YPos = y;
 			_ZPos = z;
+
+			vboInit = false;
 		}
 
 		/*
 		Creation des VBO
 		*/
 
-		//On met le chunk ddans son VBO
+		//On met le chunk dans son VBO
 		void toVbos(void)
 		{
 			SAFEDELETE(VboOpaque);
 			SAFEDELETE(VboTransparent);
 
+			char msg[150];
+			sprintf_s(msg, 150, "crea vbo chunk pos %d %d %d", _XPos, _YPos, _ZPos);
+			YLog::log(YLog::ENGINE_INFO, msg);
+
 			//Compter les sommets
 
+			int cubeOpaque = 0, cubeTransparent = 0;
+
+			for (int x = 0; x < CHUNK_SIZE; x++)
+			{
+				for (int y = 0; y < CHUNK_SIZE; y++)
+				{
+					for (int z = 0; z < CHUNK_SIZE; z++)
+					{
+						if(_Cubes[x][y][z].getType() != MCube::CUBE_AIR)
+						{
+							if (_Cubes[x][y][z].isOpaque()
+								&& _Cubes[x][y][z].getDraw())
+								cubeOpaque++;
+							else if (_Cubes[x][y][z].isTransparent()
+								&& _Cubes[x][y][z].getDraw())
+								cubeTransparent++;
+						}
+					}
+				}
+			}
+
+			sprintf_s(msg, 150, "chunk pos %d %d %d opaque %d  transp %d", _XPos, _YPos, _ZPos, cubeOpaque, cubeTransparent);
+			YLog::log(YLog::ENGINE_INFO, msg);
+
 			//Créer les VBO
+			VboOpaque = new YVbo(4, cubeOpaque * 36, YVbo::PACK_BY_VERTICE);
+
+			VboOpaque->setElementDescription(0, YVbo::Element(3));
+			VboOpaque->setElementDescription(1, YVbo::Element(3));
+			VboOpaque->setElementDescription(2, YVbo::Element(2));
+			VboOpaque->setElementDescription(3, YVbo::Element(1));
+
+			VboOpaque->createVboCpu();
+
+			VboTransparent = new YVbo(4, cubeTransparent * 36, YVbo::PACK_BY_VERTICE);
+
+			VboTransparent->setElementDescription(0, YVbo::Element(3));
+			VboTransparent->setElementDescription(1, YVbo::Element(3));
+			VboTransparent->setElementDescription(2, YVbo::Element(2));
+			VboTransparent->setElementDescription(3, YVbo::Element(1));
+
+			
+			VboTransparent->createVboCpu();
+
+			YVec3f a = YVec3f();
+			YVec3f b = YVec3f();
+			YVec3f c = YVec3f();
+			YVec3f d = YVec3f();
+			int iVerticeOpaque = 0;
+			int iVerticeTransparent = 0;
+			const int size = MCube::CUBE_SIZE;
 
 			//Remplir les VBO
+			//TODO: check if face needs to be shown
+			for (int x = 0; x < CHUNK_SIZE; x++)
+			{
+				for (int y = 0; y < CHUNK_SIZE; y++)
+				{
+					for (int z = 0; z < CHUNK_SIZE; z++)
+					{
+						float type = (int)_Cubes[x][y][z].getType();
+						auto vbo = _Cubes[x][y][z].isOpaque() ? VboOpaque : VboTransparent;
+						int& vert = _Cubes[x][y][z].isOpaque() ? iVerticeOpaque : iVerticeTransparent;
+
+						if(_Cubes[x][y][z].getDraw() && _Cubes[x][y][z].getType() != MCube::CUBE_AIR)
+						{
+							const int trueX = (x * size) + _XPos * CHUNK_SIZE;
+							const int trueY = (y * size) + _YPos * CHUNK_SIZE;
+							const int trueZ = (z * size) + _ZPos * CHUNK_SIZE;
+							// XY
+							a = YVec3f(trueX, trueY, trueZ);
+							b = YVec3f(trueX, trueY + size, trueZ);
+							c = YVec3f(trueX + size, trueY + size, trueZ);
+							d = YVec3f(trueX + size, trueY, trueZ);
+							vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+							a = YVec3f(trueX, trueY, trueZ + size);
+							b = YVec3f(trueX + size, trueY, trueZ + size);
+							c = YVec3f(trueX + size, trueY + size, trueZ + size);
+							d = YVec3f(trueX, trueY + size, trueZ + size);
+							vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+
+							if(_Cubes[x][y][z].isOpaque())
+							{
+								// XZ
+								a = YVec3f(trueX, trueY, trueZ);
+								b = YVec3f(trueX + size, trueY, trueZ);
+								c = YVec3f(trueX + size, trueY, trueZ + size);
+								d = YVec3f(trueX, trueY, trueZ + size);
+								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+								a = YVec3f(trueX, trueY + size, trueZ);
+								b = YVec3f(trueX, trueY + size, trueZ + size);
+								c = YVec3f(trueX + size, trueY + size, trueZ + size);
+								d = YVec3f(trueX + size, trueY + size, trueZ);
+								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+
+								// YZ
+								a = YVec3f(trueX, trueY, trueZ);
+								b = YVec3f(trueX, trueY, trueZ + size);
+								c = YVec3f(trueX, trueY + size, trueZ + size);
+								d = YVec3f(trueX, trueY + size, trueZ);
+								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+								a = YVec3f(trueX + size, trueY, trueZ);
+								b = YVec3f(trueX + size, trueY + size, trueZ);
+								c = YVec3f(trueX + size, trueY + size, trueZ + size);
+								d = YVec3f(trueX + size, trueY, trueZ + size);
+								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+							}
+						}
+					}
+				}
+			}
+
 			
+		}
+
+		void sendToGPU()
+		{
+			VboOpaque->createVboGpu();
+			VboOpaque->deleteVboCpu();
+
+			VboTransparent->createVboGpu();
+			VboTransparent->deleteVboCpu();
+
+			vboInit = true;
+		}
+
+		YVec3f GetAtlasPosition(float type)
+		{
+			//rock	0 0
+			//dirt  3 0
+			//water 14 0
+
+			if (type == 1) //dirt
+				return YVec3f(2, 0, 0);
+			if (type == 3)
+				return YVec3f(0, 0, 0);
+			if (type == 4)
+				return YVec3f(14, 0, 0);
+
+			return YVec3f(-1, -1, -1);
 		}
 
 		//Ajoute un quad du cube. Attention CCW
 		int addQuadToVbo(YVbo * vbo, int iVertice, YVec3f & a, YVec3f & b, YVec3f & c, YVec3f & d, float type) {
 
+			YVec3f test = (b - a).normalize().cross((c - a).normalize());
+			YVec3f uvPosition = GetAtlasPosition(type) * 0.0625;
+			
+			vbo->setElementValue(0, iVertice, a.X, a.Y, a.Z);
+			vbo->setElementValue(1, iVertice, test.X, test.Y, test.Z);
+			vbo->setElementValue(2, iVertice, uvPosition.X , uvPosition.Y + 0.0625f);
+			vbo->setElementValue(3, iVertice, type);
+			++iVertice;
+			vbo->setElementValue(0, iVertice, b.X, b.Y, b.Z);
+			vbo->setElementValue(1, iVertice, test.X, test.Y, test.Z);
+			vbo->setElementValue(2, iVertice, uvPosition.X + 0.0625, uvPosition.Y + 0.0625);
+			vbo->setElementValue(3, iVertice, type);
+			++iVertice;
+			vbo->setElementValue(0, iVertice, c.X, c.Y, c.Z);
+			vbo->setElementValue(1, iVertice, test.X, test.Y, test.Z);
+			vbo->setElementValue(2, iVertice, uvPosition.X + 0.0625, uvPosition.Y);
+			vbo->setElementValue(3, iVertice, type);
+			++iVertice;
+			
+			vbo->setElementValue(0, iVertice, a.X, a.Y, a.Z);
+			vbo->setElementValue(1, iVertice, test.X, test.Y, test.Z);
+			vbo->setElementValue(2, iVertice, uvPosition.X, uvPosition.Y + 0.0625);
+			vbo->setElementValue(3, iVertice, type);
+			++iVertice;
+			vbo->setElementValue(0, iVertice, c.X, c.Y, c.Z);
+			vbo->setElementValue(1, iVertice, test.X, test.Y, test.Z);
+			vbo->setElementValue(2, iVertice, uvPosition.X + 0.0625, uvPosition.Y);
+			vbo->setElementValue(3, iVertice, type);
+			++iVertice;
+			vbo->setElementValue(0, iVertice, d.X, d.Y, d.Z);
+			vbo->setElementValue(1, iVertice, test.X, test.Y, test.Z);
+			vbo->setElementValue(2, iVertice, uvPosition.X, uvPosition.Y);
+			vbo->setElementValue(3, iVertice, type);
 			return 6;
 		}
 
 		//Permet de compter les triangles ou des les ajouter aux VBO
-		void foreachVisibleTriangle(bool countOnly, int * nbVertOpaque, int * nbVertTransp, YVbo * VboOpaque, YVbo * VboTrasparent) {
-
-
+		void foreachVisibleTriangle(bool countOnly, int * nbVertOpaque, int * nbVertTransp, YVbo * VboOpaque, YVbo * VboTrasparent)
+		{
 		}
 
 		/*
@@ -130,10 +306,13 @@ class MChunk
 
 		void render(bool transparent)
 		{
-			if (transparent)
-				VboTransparent->render();
-			else
-				VboOpaque->render();
+			if(vboInit)
+			{
+				if (transparent)
+					VboTransparent->render();
+				else
+					VboOpaque->render();
+			}
 		}
 
 		/**
