@@ -10,6 +10,8 @@
 #include <thread>
 #include <mutex>
 
+#include "engine_minicraft.h"
+
 class MWorld
 {
 public :
@@ -32,29 +34,38 @@ public :
 
 	MChunk * Chunks[MAT_SIZE][MAT_SIZE][MAT_HEIGHT];
 
-	YPerlin* noise;
+	list<MChunk*> chunks;
 
 	GLuint shaderProgram;
 
 	YTexFile* texture;
 	std::thread chunker1;
+	bool chunker1Done;
+	
 	std::thread chunker2;
-	std::vector<MChunk*> chunkier;
-	std::vector<YVec3f> chunkList;
+	bool chunker2Done;
+	std::list<MChunk*> chunkier;
+	std::list<YVec3<int>> chunkList;
 
 	std::mutex chunkierMutex;
 	std::mutex chunkListMutex;
 
 	int seed;
+
+	YVec3<int> playerChunkPosition;
 	
 	MWorld()
 	{
-		chunkier = std::vector<MChunk*>();
-		chunkList = std::vector<YVec3f>();
+		chunkier = std::list<MChunk*>();
+		chunkList = std::list<YVec3<int>>();
+		chunks = std::list<MChunk*>();
+
+		chunker1Done = true;
+		chunker2Done = true;
+
+		playerChunkPosition = YVec3<int>(0, 0, 0);
 		
 		texture = YTexManager::getInstance()->loadTexture("terrain.png");
-		noise = new YPerlin();
-		noise->setFreq(0.2f);
 
 		shaderProgram = YEngine::getInstance()->Renderer->createProgram("shaders/world");
 
@@ -130,68 +141,124 @@ public :
 		updateCube(x,y,z);	
 	}
 
-	void fillChunks()
+	MChunk* getChunkAt(int x, int y, int z)
 	{
+		for (auto chunk : chunks)
+		{
+			if (x == chunk->_XPos && y == chunk->_YPos && z == chunk->_ZPos)
+				return chunk;
+		}
+
+		return nullptr;
+	}
+
+	void threadChunkHandler(bool* done)
+	{
+		*done = false;
 		YPerlin n = YPerlin();
-		n.setFreq(.25f);
+		n.setFreq(.015f);
 		
 		while(!chunkList.empty())
 		{
-			YVec3f chunkPos = chunkList.front();
-			auto chunk = Chunks[(int)chunkPos.X][(int)chunkPos.Y][(int)chunkPos.Z];
+			YVec3<int> chunkPos;
+			{
+				std::lock_guard<std::mutex> lock1(chunkListMutex);
 
-			YLog::log(YLog::ENGINE_INFO, "starting chunk");
-			const int xStart = chunk->_XPos;
-			const int yStart = chunk->_YPos;
-			const int zStart = chunk->_ZPos;
+				chunkPos = chunkList.front();
+				chunkList.erase(chunkList.begin());
+			}
 
-			
+			MChunk* chunk = getChunkAt(chunkPos.X, chunkPos.Y, chunkPos.Z);
 
-			for (int x = MChunk::CHUNK_SIZE * xStart; x < (MChunk::CHUNK_SIZE * xStart) + MChunk::CHUNK_SIZE; x++)
-				for (int y = MChunk::CHUNK_SIZE * yStart; y < (MChunk::CHUNK_SIZE * yStart) + MChunk::CHUNK_SIZE; y++)
-					for (int z = MChunk::CHUNK_SIZE * zStart; z < (MChunk::CHUNK_SIZE * zStart) + MChunk::CHUNK_SIZE; z++)
-					{
-						auto cube = getCube(x, y, z);
+			if(chunk)
+			{
+				YLog::log(YLog::ENGINE_INFO, "loading chunk from list");
+				
+				chunk->disableHiddenCubes();
+				chunk->toVbos();
 
-						float perlin = n.sample((x % 51) * 0.3f , (y % 51) * 0.6f
-							, (z % 51) * 0.6f);
+				std::lock_guard<std::mutex> lock(chunkierMutex);
+				chunkier.push_back(chunk);
+			}
+			else
+			{
+				char path[50];
 
-						if (perlin < 0.15f)
-							cube->setType(MCube::CUBE_PIERRE);
-						if (perlin > 0.41f)
-							cube->setType(MCube::CUBE_TERRE);
-						if (perlin < 0.24 && z <= 0.1)
-							cube->setType(MCube::CUBE_EAU);
-						if (perlin > 0.56)
-							cube->setType(MCube::CUBE_EAU);
+				sprintf_s(path, "%d_%d_%d.txt", chunkPos.X, chunkPos.Y, chunkPos.Z);
+				ifstream i(path, ifstream::binary);
 
-					}
+				MChunk* chunk = new MChunk(chunkPos.X, chunkPos.Y, chunkPos.Z);
 
-			chunk->disableHiddenCubes();
+				//if the file exists, the chunk has already been computed
+				if (i.good())
+				{
+					YLog::log(YLog::ENGINE_INFO, "loading chunk from file");
+					chunk->loadFrom(i);
+					
+					i.close();
+				}
+				else
+				{
+					i.close();
 
-			chunk->toVbos();
+					YLog::log(YLog::ENGINE_INFO, "starting chunk");
+					const int xStart = chunk->_XPos;
+					const int yStart = chunk->_YPos;
+					const int zStart = chunk->_ZPos;
 
-			const std::lock_guard<std::mutex> lock(chunkierMutex);
-			chunkier.push_back(chunk);
 
-			const std::lock_guard<std::mutex> lock1(chunkListMutex);
-			chunkList.erase(chunkList.begin());
+
+					for (int x = MChunk::CHUNK_SIZE * xStart; x < (MChunk::CHUNK_SIZE * xStart) + MChunk::CHUNK_SIZE; x++)
+						for (int y = MChunk::CHUNK_SIZE * yStart; y < (MChunk::CHUNK_SIZE * yStart) + MChunk::CHUNK_SIZE; y++)
+							for (int z = MChunk::CHUNK_SIZE * zStart; z < (MChunk::CHUNK_SIZE * zStart) + MChunk::CHUNK_SIZE; z++)
+							{
+								auto cube = getCube(x, y, z);
+
+								float perlin = n.sample(x, y, z);
+
+								if (perlin < 0.50f)
+									cube->setType(MCube::CUBE_PIERRE);
+								if (perlin > 0.51f)
+									cube->setType(MCube::CUBE_TERRE);
+								if (perlin < 0.44 && z <= 0.1)
+									cube->setType(MCube::CUBE_EAU);
+								if (perlin > 0.56)
+									cube->setType(MCube::CUBE_EAU);
+
+							}
+				}
+				
+				chunks.push_back(chunk);
+				chunk->disableHiddenCubes();
+
+				chunk->toVbos();
+
+				const std::lock_guard<std::mutex> lock(chunkierMutex);
+				chunkier.push_back(chunk);
+			}
 		}
 		
-
 		YLog::log(YLog::ENGINE_INFO, "ending thread");
+		*done = true;
 	}
 
 	void addChunkToGenerate(int x, int y, int z)
 	{
 		const std::lock_guard<std::mutex> lock1(chunkListMutex);
-		chunkList.push_back(YVec3f(x, y, z));
+		chunkList.emplace_back(x, y, z);
 
-		if(chunker1.joinable())
+		if(chunker1Done)
 		{
 			//chunker1.join();
-			chunker1 = std::thread(&MWorld::fillChunks, this);
+			chunker1 = std::thread(&MWorld::threadChunkHandler, this, &chunker1Done);
 		}
+
+		if(chunker2Done)
+		{
+			//chunker2.join();
+			chunker2 = std::thread(&MWorld::threadChunkHandler, this, &chunker2Done);
+		}
+		
 	}
 			
 	void init_world(int seed)
@@ -208,14 +275,18 @@ public :
 				for(int z=0;z<MAT_HEIGHT;z++)
 					Chunks[x][y][z]->reset();
 
-		//Générer ici le monde en modifiant les cubes
-		//Utiliser getCubes()
+		/*for (int x = 0; x < MAT_SIZE; x++)
+			for (int y = 0; y < MAT_SIZE; y++)
+				for (int z = 0; z < MAT_HEIGHT; z++)
+					chunkList.push_back(YVec3f(x, y, z));*/
+
 		for (int x = 0; x < MAT_SIZE; x++)
 			for (int y = 0; y < MAT_SIZE; y++)
 				for (int z = 0; z < MAT_HEIGHT; z++)
-					chunkList.push_back(YVec3f(x, y, z));
+					chunkList.emplace_back(x, y, z);
 		
-		chunker1 = std::thread(&MWorld::fillChunks, this);
+		chunker1 = std::thread(&MWorld::threadChunkHandler, this, &chunker1Done);
+		chunker2 = std::thread(&MWorld::threadChunkHandler, this, &chunker2Done);
 	}
 
 	void update()
@@ -226,13 +297,114 @@ public :
 
 		if(!chunkier.empty())
 		{
-			for(MChunk* c : chunkier)
+			auto front = chunkier.front();
+			front->sendToGPU();
+
+			front->saveToDisk();
+
+			chunkier.erase(chunkier.begin());
+		}
+
+		auto position = YEngine::getInstance()->Renderer->Camera->Position;
+		position.X = (int)position.X / MChunk::CHUNK_SIZE;
+		position.Y = (int)position.Y / MChunk::CHUNK_SIZE;
+		position.Z = (int)position.Z / MChunk::CHUNK_SIZE;
+
+		YVec3<int> pos = YVec3<int>(position.X, position.Y, position.Z);
+
+		
+		if(!(pos == playerChunkPosition))
+		{
+			
+			//check what chunk needs to be loaded
+			vector<YVec3<int>> chunkPosToAdd;
+			
+			chunkPosToAdd.emplace_back(pos);
+			auto pos1 = YVec3<int>(pos.X + 1, pos.Y, pos.Z);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X + 1, pos.Y + 1, pos.Z);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X + 1, pos.Y + 1, pos.Z + 1);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X + 1, pos.Y, pos.Z + 1);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X, pos.Y, pos.Z + 1);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X, pos.Y + 1, pos.Z);
+			chunkPosToAdd.emplace_back(pos1);
+
+			pos1 = YVec3<int>(pos.X - 1, pos.Y, pos.Z);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X - 1, pos.Y - 1, pos.Z);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X - 1, pos.Y - 1, pos.Z - 1);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X - 1, pos.Y, pos.Z - 1);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X, pos.Y, pos.Z - 1);
+			chunkPosToAdd.emplace_back(pos1);
+			pos1 = YVec3<int>(pos.X, pos.Y - 1, pos.Z);
+			chunkPosToAdd.emplace_back(pos1);
+			
+
+			//we use the neighbors map to see what chunk to delete
+			// delete and save the unwanted chunks
+
+			vector<YVec3<int>> chunkPosToAddFinal;
+			vector<YVec3<int>> chunkToKeep;
+			for (int i = 0; i < chunkPosToAdd.size(); ++i)
 			{
-				c->sendToGPU();
+				MChunk* chunk = getChunkAt(chunkPosToAdd[i].X, chunkPosToAdd[i].Y, chunkPosToAdd[i].Z);
+
+				if(!chunk)
+				{
+					chunkPosToAddFinal.push_back(chunkPosToAdd[i]);
+				}
+				else
+				{
+					chunkToKeep.push_back(chunkPosToAdd[i]);
+				}
 			}
 
-			chunkier.clear();
+			vector<MChunk*> chunkToDelete(chunks.begin(), chunks.end());
+
+			for (int i = 0; i < chunkToKeep.size(); ++i)
+			{
+				for (int j = 0; j < chunkToDelete.size(); ++j)
+				{
+					MChunk* chunk = chunkToDelete[j];
+
+					if (chunk->_XPos == chunkToKeep[i].X
+						&& chunk->_YPos == chunkToKeep[i].Y
+						&& chunk->_ZPos == chunkToKeep[i].Z)
+					{
+						chunkToDelete.erase(chunkToDelete.begin() + j);
+						break;
+					}
+				}
+				
+			}
+
+			for (int i = 0; i < chunkToDelete.size(); ++i)
+			{
+				auto chunk = chunkToDelete.at(i);
+
+				chunk->saveToDisk();
+				chunks.remove(chunk);
+
+				delete chunk;
+			}
+
+			for (int i = 0; i < chunkPosToAddFinal.size(); ++i)
+			{
+				addChunkToGenerate(chunkPosToAddFinal[i].X, chunkPosToAddFinal[i].Y, chunkPosToAddFinal[i].Z);
+			}
+			
+			
+			//set the neighbors
 		}
+
+		playerChunkPosition = pos;
 	}
 
 	void add_world_to_vbo(void)
@@ -498,7 +670,7 @@ public :
 		glDisable(GL_BLEND);
 		//Dessiner les chunks opaques
 				
-		for (int i = 0; i < MAT_SIZE; i++)
+		/*for (int i = 0; i < MAT_SIZE; i++)
 		{
 			for (int j = 0; j < MAT_SIZE; j++)
 			{
@@ -507,13 +679,19 @@ public :
 					Chunks[i][j][k]->render(false);
 				}
 			}
+		}*/
+
+		
+		std::list<MChunk*>::const_iterator iterator;
+		for (iterator = chunks.begin(); iterator != chunks.end(); ++iterator) {
+			(*iterator)->render(false);
 		}
 
 		if (doTransparent)
 		{
 			glEnable(GL_BLEND);
 			//Dessiner les chunks transparents
-			for (int i = 0; i < MAT_SIZE; i++)
+			/*for (int i = 0; i < MAT_SIZE; i++)
 			{
 				for (int j = 0; j < MAT_SIZE; j++)
 				{
@@ -522,6 +700,11 @@ public :
 						Chunks[i][j][k]->render(true);
 					}
 				}
+			}*/
+
+			std::list<MChunk*>::const_iterator iterator;
+			for (iterator = chunks.begin(); iterator != chunks.end(); ++iterator) {
+				(*iterator)->render(true);
 			}
 		}
 	}

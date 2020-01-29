@@ -257,7 +257,7 @@ public :
 		sunColor = YColor(1.0f, 1.0f, 0.0f, 1.0f);
 
 		world = new MWorld();
-		world->init_world(0);
+		world->init_world(rand());
 		camPosition = new GUILabel();
 		auto pos = Renderer->Camera->Position;
 		camPosition->Text.clear();

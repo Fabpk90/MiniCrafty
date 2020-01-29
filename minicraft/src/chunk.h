@@ -3,6 +3,9 @@
 #include "engine/render/renderer.h"
 #include "engine/render/vbo.h"
 #include "cube.h"
+#include <fstream>
+#include <chrono>
+#include <list>
 
 /**
   * On utilise des chunks pour que si on modifie juste un cube, on ait pas
@@ -32,6 +35,12 @@ class MChunk
 			_ZPos = z;
 
 			vboInit = false;
+		}
+
+		~MChunk()
+		{
+			delete VboOpaque;
+			delete VboTransparent;
 		}
 
 		/*
@@ -120,11 +129,7 @@ class MChunk
 							const int trueY = (y * size) + _YPos * CHUNK_SIZE;
 							const int trueZ = (z * size) + _ZPos * CHUNK_SIZE;
 							// XY
-							a = YVec3f(trueX, trueY, trueZ);
-							b = YVec3f(trueX, trueY + size, trueZ);
-							c = YVec3f(trueX + size, trueY + size, trueZ);
-							d = YVec3f(trueX + size, trueY, trueZ);
-							vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+							
 							a = YVec3f(trueX, trueY, trueZ + size);
 							b = YVec3f(trueX + size, trueY, trueZ + size);
 							c = YVec3f(trueX + size, trueY + size, trueZ + size);
@@ -133,6 +138,12 @@ class MChunk
 
 							if(_Cubes[x][y][z].isOpaque())
 							{
+								a = YVec3f(trueX, trueY, trueZ);
+								b = YVec3f(trueX, trueY + size, trueZ);
+								c = YVec3f(trueX + size, trueY + size, trueZ);
+								d = YVec3f(trueX + size, trueY, trueZ);
+								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
+
 								// XZ
 								a = YVec3f(trueX, trueY, trueZ);
 								b = YVec3f(trueX + size, trueY, trueZ);
@@ -182,11 +193,11 @@ class MChunk
 			//dirt  3 0
 			//water 14 0
 
-			if (type == 1) //dirt
+			if (type == 2) //dirt
 				return YVec3f(2, 0, 0);
-			if (type == 3)
-				return YVec3f(0, 0, 0);
 			if (type == 4)
+				return YVec3f(0, 0, 0);
+			if (type == 5)
 				return YVec3f(14, 0, 0);
 
 			return YVec3f(-1, -1, -1);
@@ -384,5 +395,88 @@ class MChunk
 					}
 		}
 
+		void saveToDisk()
+		{
 
+			uint8* buffer = new uint8[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 4];
+
+			MCube::MCubeType cubeType = _Cubes[0][0][0].getType();
+			uint16 nbOccur = 0;
+			int allCase = 0;
+			int posInFile = -1;
+			for (int z = 0; z < CHUNK_SIZE; ++z)
+				for (int y = 0; y < CHUNK_SIZE; ++y) {
+					for (int x = 0; x < CHUNK_SIZE; ++x) {
+						++allCase;
+						if (_Cubes[x][y][z].getType() == cubeType) ++nbOccur;
+
+
+						if ((_Cubes[x][y][z].getType() != cubeType || nbOccur == 0xFFFF) || (z + 1 == CHUNK_SIZE && y + 1 == CHUNK_SIZE && x + 1 == CHUNK_SIZE)) {
+							bool endnull = (nbOccur & 0xFF00) == 0x0000;
+							bool basenull = (nbOccur & 0x00FF) == 0x0000;
+
+							uint8 occurInfo = 0x80 | ((basenull) ? 0x00 : 0x01) | ((endnull) ? 0x00 : 0x02);
+							buffer[++posInFile] = (MCube::MCubeType)cubeType;
+							buffer[++posInFile] = occurInfo;
+
+							buffer[++posInFile] = (!endnull) ? (nbOccur >> 8) : 0xff;
+							buffer[++posInFile] = (!basenull) ? nbOccur : 0xff;
+
+							if (nbOccur < 0xFFFF) nbOccur = 1;
+							else nbOccur = 0;
+							cubeType = _Cubes[x][y][z].getType();
+						}
+
+					}
+				}
+			buffer[++posInFile] = 0x00;
+
+			char path[50];
+			sprintf_s(path, "%d_%d_%d.txt", _XPos, _YPos, _ZPos); 
+
+			ofstream myfile(path, std::ofstream::binary);
+			myfile << buffer;
+
+			buffer[posInFile] = 0x01;
+			delete[] buffer;
+			myfile.close();
+		}
+
+		void loadFrom(const ifstream& stream)
+		{
+			
+			std::filebuf* pbuf = stream.rdbuf();
+			uint16 size = pbuf->pubseekoff(0, stream.end, stream.in);
+			pbuf->pubseekpos(0, stream.in);
+			uint8* buffer = new uint8[size];
+			pbuf->sgetn((char*)buffer, size);
+
+			int posInFile = 0;
+			MCube::MCubeType cubeType;
+			uint16 nbOccur = 0;
+
+			for (int z = 0; z < CHUNK_SIZE; ++z)
+				for (int y = 0; y < CHUNK_SIZE; ++y) {
+					for (int x = 0; x < CHUNK_SIZE; ++x) {
+
+
+						if (nbOccur == 0) {
+							cubeType = (MCube::MCubeType)buffer[posInFile];
+							++posInFile;
+							uint8 occurinfo = buffer[posInFile];
+							++posInFile;
+							nbOccur = ((occurinfo & 2) == 0x02) ? buffer[posInFile] << 8 : 0x00;
+							++posInFile;
+							nbOccur |= ((occurinfo & 1) == 0x01) ? buffer[posInFile] : 0x00;
+							++posInFile;
+						}
+
+						nbOccur--;
+						_Cubes[x][y][z].setType(cubeType);
+					}
+				}
+
+
+			delete[] buffer;
+		}
 };
