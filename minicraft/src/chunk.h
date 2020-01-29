@@ -395,6 +395,11 @@ class MChunk
 					}
 		}
 
+		MCube* getCubeAt(int x, int y, int z)
+		{
+			return &_Cubes[x][y][z];
+		}
+
 		void saveToDisk()
 		{
 

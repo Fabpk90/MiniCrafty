@@ -21,7 +21,7 @@ public :
 	static const int AXIS_Z = 0b00000100;
 
 	#ifdef _DEBUG
-	static const int MAT_SIZE = 5; //en nombre de chunks
+	static const int MAT_SIZE = 3; //en nombre de chunks
 	#else
 	static const int MAT_SIZE = 3; //en nombre de chunks
 	#endif // DEBUG
@@ -106,6 +106,8 @@ public :
 					
 	}
 
+	//TODO: change this to the current chunk !
+
 	inline MCube * getCube(int x, int y, int z)
 	{	
 		if(x < 0)x = 0;
@@ -165,7 +167,7 @@ public :
 				std::lock_guard<std::mutex> lock1(chunkListMutex);
 
 				chunkPos = chunkList.front();
-				chunkList.erase(chunkList.begin());
+				chunkList.remove(chunkPos);
 			}
 
 			MChunk* chunk = getChunkAt(chunkPos.X, chunkPos.Y, chunkPos.Z);
@@ -202,19 +204,17 @@ public :
 					i.close();
 
 					YLog::log(YLog::ENGINE_INFO, "starting chunk");
-					const int xStart = chunk->_XPos;
-					const int yStart = chunk->_YPos;
-					const int zStart = chunk->_ZPos;
 
 
-
-					for (int x = MChunk::CHUNK_SIZE * xStart; x < (MChunk::CHUNK_SIZE * xStart) + MChunk::CHUNK_SIZE; x++)
-						for (int y = MChunk::CHUNK_SIZE * yStart; y < (MChunk::CHUNK_SIZE * yStart) + MChunk::CHUNK_SIZE; y++)
-							for (int z = MChunk::CHUNK_SIZE * zStart; z < (MChunk::CHUNK_SIZE * zStart) + MChunk::CHUNK_SIZE; z++)
+					for (int x = 0; x < MChunk::CHUNK_SIZE; x++)
+						for (int y = 0; y <  MChunk::CHUNK_SIZE; y++)
+							for (int z = 0; z < MChunk::CHUNK_SIZE; z++)
 							{
-								auto cube = getCube(x, y, z);
+								auto cube = chunk->getCubeAt(x, y, z);
 
-								float perlin = n.sample(x, y, z);
+								float perlin = n.sample(x * (MChunk::CHUNK_SIZE),
+									y * (MChunk::CHUNK_SIZE),
+									z * (MChunk::CHUNK_SIZE));
 
 								if (perlin < 0.50f)
 									cube->setType(MCube::CUBE_PIERRE);
@@ -244,18 +244,24 @@ public :
 
 	void addChunkToGenerate(int x, int y, int z)
 	{
-		const std::lock_guard<std::mutex> lock1(chunkListMutex);
-		chunkList.emplace_back(x, y, z);
+		{
+			const std::lock_guard<std::mutex> lock1(chunkListMutex);
+			chunkList.emplace_back(x, y, z);
+		}
 
 		if(chunker1Done)
 		{
-			//chunker1.join();
+			chunker1Done = false;
+			YLog::log(YLog::ENGINE_INFO, "waiting for thread 1");
+			chunker1.join();
 			chunker1 = std::thread(&MWorld::threadChunkHandler, this, &chunker1Done);
 		}
 
 		if(chunker2Done)
 		{
-			//chunker2.join();
+			chunker2Done = false;
+			YLog::log(YLog::ENGINE_INFO, "waiting for thread 2");
+			chunker2.join();
 			chunker2 = std::thread(&MWorld::threadChunkHandler, this, &chunker2Done);
 		}
 		
