@@ -431,35 +431,47 @@ public :
 
 	void keyPressed(int key, bool special, bool down, int p1, int p2)
 	{
-		switch (key)
+
+		if(!special)
 		{
-		case 122: // z
-			isZing = down;
-			break;
+			switch (key)
+			{
+			case 122: // z
+				isZing = down;
+				break;
 
-		case 113: //q
-			isQing = down;
-			break;
+			case 113: //q
+				isQing = down;
+				break;
 
-		case 115: // s
-			isSing = down;
-			break;
-		case 100: //d
-			isDing = down;
-			break;
+			case 115: // s
+				isSing = down;
+				break;
+			case 100: //d
+				isDing = down;
+				break;
+			}
+		}
+		else
+		{
+			switch (key)
+			{
+			case GLUT_KEY_CTRL_L:
+				isCtrling = down;
+				break;
 
-		case GLUT_KEY_CTRL_L:
-			isCtrling = down;
-			break;
-		default:
-			break;
+			case GLUT_KEY_SHIFT_L:
+				Renderer->Camera->boost = down;
+			default:
+				break;
+			}
 		}
 	}
 
 	void mouseWheel(int wheel, int dir, int x, int y, bool inUi)
 	{
-		//3 avant
-		//4 arrière
+		//2 avant
+		//3 arrière
 
 		auto fov = Renderer->Camera->FovY;
 		if (wheel == 2)

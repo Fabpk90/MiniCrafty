@@ -138,10 +138,10 @@ class MChunk
 
 							if(_Cubes[x][y][z].isOpaque())
 							{
-								a = YVec3f(trueX, trueY, trueZ);
-								b = YVec3f(trueX, trueY + size, trueZ);
-								c = YVec3f(trueX + size, trueY + size, trueZ);
-								d = YVec3f(trueX + size, trueY, trueZ);
+								b = YVec3f(trueX, trueY, trueZ);
+								c = YVec3f(trueX, trueY + size, trueZ);
+								d = YVec3f(trueX + size, trueY + size, trueZ);
+								a = YVec3f(trueX + size, trueY, trueZ);
 								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
 
 								// XZ
@@ -150,17 +150,17 @@ class MChunk
 								c = YVec3f(trueX + size, trueY, trueZ + size);
 								d = YVec3f(trueX, trueY, trueZ + size);
 								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
-								a = YVec3f(trueX, trueY + size, trueZ);
-								b = YVec3f(trueX, trueY + size, trueZ + size);
-								c = YVec3f(trueX + size, trueY + size, trueZ + size);
-								d = YVec3f(trueX + size, trueY + size, trueZ);
+								b = YVec3f(trueX, trueY + size, trueZ);
+								c = YVec3f(trueX, trueY + size, trueZ + size);
+								d = YVec3f(trueX + size, trueY + size, trueZ + size);
+								a = YVec3f(trueX + size, trueY + size, trueZ);
 								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
 
 								// YZ
-								a = YVec3f(trueX, trueY, trueZ);
-								b = YVec3f(trueX, trueY, trueZ + size);
-								c = YVec3f(trueX, trueY + size, trueZ + size);
-								d = YVec3f(trueX, trueY + size, trueZ);
+								b = YVec3f(trueX, trueY, trueZ);
+								c = YVec3f(trueX, trueY, trueZ + size);
+								d = YVec3f(trueX, trueY + size, trueZ + size);
+								a = YVec3f(trueX, trueY + size, trueZ);
 								vert += addQuadToVbo(vbo, vert, a, b, c, d, type);
 								a = YVec3f(trueX + size, trueY, trueZ);
 								b = YVec3f(trueX + size, trueY + size, trueZ);
@@ -189,14 +189,17 @@ class MChunk
 
 		YVec3f GetAtlasPosition(float type)
 		{
-			//rock	0 0
+			//grass	0 0
+			//rock	1 0
 			//dirt  3 0
 			//water 14 0
 
+			if(type == 1)
+				return YVec3f(0, 0, 0);
 			if (type == 2) //dirt
 				return YVec3f(2, 0, 0);
 			if (type == 4)
-				return YVec3f(0, 0, 0);
+				return YVec3f(1, 0, 0);
 			if (type == 5)
 				return YVec3f(14, 0, 0);
 
@@ -451,22 +454,22 @@ class MChunk
 		{
 			
 			std::filebuf* pbuf = stream.rdbuf();
-			uint16 size = pbuf->pubseekoff(0, stream.end, stream.in);
+			int size = pbuf->pubseekoff(0, stream.end, stream.in);
 			pbuf->pubseekpos(0, stream.in);
 			uint8* buffer = new uint8[size];
 			pbuf->sgetn((char*)buffer, size);
 
 			int posInFile = 0;
-			MCube::MCubeType cubeType;
+			uint8 cubeType;
 			uint16 nbOccur = 0;
-
+			
 			for (int z = 0; z < CHUNK_SIZE; ++z)
 				for (int y = 0; y < CHUNK_SIZE; ++y) {
 					for (int x = 0; x < CHUNK_SIZE; ++x) {
 
 
 						if (nbOccur == 0) {
-							cubeType = (MCube::MCubeType)buffer[posInFile];
+							cubeType = buffer[posInFile];
 							++posInFile;
 							uint8 occurinfo = buffer[posInFile];
 							++posInFile;
@@ -477,11 +480,10 @@ class MChunk
 						}
 
 						nbOccur--;
-						_Cubes[x][y][z].setType(cubeType);
+						_Cubes[x][y][z]._Code = cubeType;
 					}
 				}
-
-
+			
 			delete[] buffer;
 		}
 };

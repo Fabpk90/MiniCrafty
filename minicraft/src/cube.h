@@ -56,7 +56,7 @@ public :
 
 	static const int CUBE_DRAW_BIT = 0x80;
 
-	private :
+	public :
 		uint8 _Code; //premier bit si on doit le draw ou pas, le reste un des 127 types
 		
 	public :

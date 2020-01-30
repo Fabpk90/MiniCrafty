@@ -29,6 +29,8 @@ public:
 	float Near;
 	float Far;
 
+	bool boost;
+
 	YCamera()
 	{
 		Position = YVec3<float>(0, -1, 0);
@@ -102,6 +104,8 @@ public:
 	*/
 	void move(YVec3<float> delta)
 	{
+		delta *= boost ? 3 : 1;
+		
 		Position += Direction * delta.X;
 		Position += RightVec * delta.Y;
 		Position += UpVec * delta.Z;

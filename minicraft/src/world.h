@@ -11,6 +11,7 @@
 #include <mutex>
 
 #include "engine_minicraft.h"
+#include "../dumber_perlin.h"
 
 class MWorld
 {
@@ -157,8 +158,7 @@ public :
 	void threadChunkHandler(bool* done)
 	{
 		*done = false;
-		YPerlin n = YPerlin();
-		n.setFreq(.015f);
+		YDumberPerlin n = YDumberPerlin();
 		
 		while(!chunkList.empty())
 		{
@@ -192,7 +192,7 @@ public :
 				MChunk* chunk = new MChunk(chunkPos.X, chunkPos.Y, chunkPos.Z);
 
 				//if the file exists, the chunk has already been computed
-				if (i.good())
+				if (false)//i.good())
 				{
 					YLog::log(YLog::ENGINE_INFO, "loading chunk from file");
 					chunk->loadFrom(i);
@@ -212,19 +212,12 @@ public :
 							{
 								auto cube = chunk->getCubeAt(x, y, z);
 
-								float perlin = n.sample(x * (MChunk::CHUNK_SIZE),
-									y * (MChunk::CHUNK_SIZE),
-									z * (MChunk::CHUNK_SIZE));
+								float perlin = n.sample((x + chunk->_XPos * MChunk::CHUNK_SIZE),
+									(y + chunk->_YPos * MChunk::CHUNK_SIZE),
+									(z + chunk->_ZPos * MChunk::CHUNK_SIZE));
 
-								if (perlin < 0.50f)
+								if (perlin > 0.5f)
 									cube->setType(MCube::CUBE_PIERRE);
-								if (perlin > 0.51f)
-									cube->setType(MCube::CUBE_TERRE);
-								if (perlin < 0.44 && z <= 0.1)
-									cube->setType(MCube::CUBE_EAU);
-								if (perlin > 0.56)
-									cube->setType(MCube::CUBE_EAU);
-
 							}
 				}
 				
@@ -319,7 +312,7 @@ public :
 		YVec3<int> pos = YVec3<int>(position.X, position.Y, position.Z);
 
 		
-		if(!(pos == playerChunkPosition))
+		/*if(!(pos == playerChunkPosition))
 		{
 			
 			//check what chunk needs to be loaded
@@ -408,7 +401,7 @@ public :
 			
 			
 			//set the neighbors
-		}
+		}*/
 
 		playerChunkPosition = pos;
 	}

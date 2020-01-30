@@ -42,8 +42,8 @@
     <Filter Include="Fichiers d%27en-tête\engine\render">
       <UniqueIdentifier>{75d7c323-8b30-4ce8-97d7-f825373fcbfa}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Fichiers d%27en-tête\engine\utils">
-      <UniqueIdentifier>{0ec6154f-f060-4846-bf43-162407ddef1b}</UniqueIdentifier>
+    <Filter Include="Fichiers d%27en-tête\utils">
+      <UniqueIdentifier>{fb15a57a-b1ff-4754-9ef6-6087f66a541d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -68,14 +68,8 @@
     <ClInclude Include="..\src\engine\render\camera.h">
       <Filter>Fichiers d%27en-tête\engine\render</Filter>
     </ClInclude>
-    <ClInclude Include="Cube.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderable.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Sun.h">
-      <Filter>Fichiers d%27en-tête</Filter>
+    <ClInclude Include="dumber_perlin.h">
+      <Filter>Fichiers d%27en-tête\engine\noise</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -88,14 +82,8 @@
     <ClCompile Include="..\src\engine\render\vbo.cpp">
       <Filter>Fichiers sources\render</Filter>
     </ClCompile>
-    <ClCompile Include="Cube.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Sun.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\engine\utils\utils.cpp">
-      <Filter>Fichiers d%27en-tête\engine\utils</Filter>
+      <Filter>Fichiers d%27en-tête\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

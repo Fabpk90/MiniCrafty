@@ -21,22 +21,18 @@
   <ItemGroup>
     <ClInclude Include="..\src\engine\noise\perlin.h" />
     <ClInclude Include="..\src\engine\render\camera.h" />
-    <ClInclude Include="Cube.h" />
-    <ClInclude Include="Renderable.h" />
+    <ClInclude Include="dumber_perlin.h" />
     <ClInclude Include="src\avatar.h" />
     <ClInclude Include="src\chunk.h" />
     <ClInclude Include="src\cube.h" />
     <ClInclude Include="src\engine_minicraft.h" />
     <ClInclude Include="src\world.h" />
-    <ClInclude Include="Sun.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\engine\render\fbo.cpp" />
     <ClCompile Include="..\src\engine\render\vbo.cpp" />
     <ClCompile Include="..\src\engine\utils\utils.cpp" />
-    <ClCompile Include="Cube.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="run\shaders\birds\fs.glsl" />
@@ -56,32 +52,32 @@
     <ProjectGuid>{17FD557D-42BC-4AF9-ABD2-025A8F8A621D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>minicraft</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

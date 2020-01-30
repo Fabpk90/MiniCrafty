@@ -14,9 +14,9 @@ out vec3 normal;
 out vec4 color;
 out vec2 uv;
 
-#define CUBE_HERBE 0.0
-#define CUBE_TERRE 1.0
-#define CUBE_EAU 4.0
+#define CUBE_HERBE 1.0
+#define CUBE_TERRE 2.0
+#define CUBE_EAU 5.0
 
 void main()
 {
@@ -32,7 +32,7 @@ void main()
 
 	//Couleur fonction du type
 	if(vs_type_in == CUBE_HERBE)
-		color = vec4(0,1,0,1);
+		color = vec4(154 / 255,255 / 255,87/255,1);
 	else if(vs_type_in == CUBE_TERRE)
 		color = vec4(0.2,0.1,0,1);
 	else if(vs_type_in == CUBE_EAU)

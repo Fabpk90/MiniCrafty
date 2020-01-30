@@ -4,6 +4,11 @@
 
 class YPerlin
 {
+protected:
+	~YPerlin()
+	{
+		delete[] Gradients;
+	};
 public:
 	YVec3f * Gradients;
 	int Width;
