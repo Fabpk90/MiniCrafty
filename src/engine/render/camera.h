@@ -137,6 +137,9 @@ public:
 	*/
 	void updateVecs(void)
 	{
+		//on normalise tout ça pour que le dot  == à la norme
+		//pour le changement de repère
+		
 		Direction = (LookAt - Position).normalize();
 		RightVec = Direction.cross(UpRef).normalize();
 		UpVec = RightVec.cross(Direction).normalize();

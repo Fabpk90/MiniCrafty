@@ -94,7 +94,7 @@ class MChunk
 			sprintf_s(msg, 150, "chunk pos %d %d %d opaque %d  transp %d", _XPos, _YPos, _ZPos, cubeOpaque, cubeTransparent);
 			YLog::log(YLog::ENGINE_INFO, msg);
 
-			//Créer les VBO
+			//Crï¿½er les VBO
 			VboOpaque = new YVbo(4, cubeOpaque * 36, YVbo::PACK_BY_VERTICE);
 
 			VboOpaque->setElementDescription(0, YVbo::Element(3));
@@ -341,7 +341,7 @@ class MChunk
 		}
 
 		/**
-		  * On verifie si le cube peut être vu
+		  * On verifie si le cube peut ï¿½tre vu
 		  */
 		bool test_hidden(int x, int y, int z)
 		{
@@ -491,7 +491,9 @@ class MChunk
 						}
 
 						nbOccur--;
-						_Cubes[x][y][z]._Code = cubeType;
+
+						//TODO: inline this to get some juicy perf
+						_Cubes[x][y][z].setType(cubeType);
 					}
 				}
 			
