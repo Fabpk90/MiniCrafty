@@ -121,7 +121,11 @@ public:
 	*/
 	void moveTo(const YVec3<float>& target)
 	{
-		Position += target;
+		Position = target;
+		LookAt = Position;
+		LookAt += Direction * 2.f;
+
+		updateVecs();
 	}
 
 	/**

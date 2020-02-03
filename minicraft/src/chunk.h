@@ -41,6 +41,17 @@ class MChunk
 		{
 			delete VboOpaque;
 			delete VboTransparent;
+
+			Voisins[0]->Voisins[1] = nullptr;
+			Voisins[1]->Voisins[0] = nullptr;
+
+			Voisins[2]->Voisins[3] = nullptr;
+			Voisins[3]->Voisins[2] = nullptr;
+
+			Voisins[4]->Voisins[5] = nullptr;
+			Voisins[5]->Voisins[4] = nullptr;
+
+			delete[] Voisins;
 		}
 
 		/*

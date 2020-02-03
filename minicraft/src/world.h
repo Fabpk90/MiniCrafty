@@ -22,7 +22,7 @@ public :
 	static const int AXIS_Z = 0b00000100;
 
 	#ifdef _DEBUG
-	static const int MAT_SIZE = 3; //en nombre de chunks
+	static const int MAT_SIZE = 1; //en nombre de chunks
 	#else
 	static const int MAT_SIZE = 3; //en nombre de chunks
 	#endif // DEBUG
@@ -74,42 +74,73 @@ public :
 		for(int x=0;x<MAT_SIZE;x++)
 			for(int y=0;y<MAT_SIZE;y++)
 				for(int z=0;z<MAT_HEIGHT;z++)
-					Chunks[x][y][z] = new MChunk(x,y,z);
+					Chunks[x][y][z] = new MChunk(x,y,z);	
+	}
 
-		for(int x=0;x<MAT_SIZE;x++)
-			for(int y=0;y<MAT_SIZE;y++)
-				for(int z=0;z<MAT_HEIGHT;z++)
+	//call this before adding it to the list
+	void SetVoisins(MChunk* chunk)
+	{
+		for (auto val : chunks)
+		{
+			if(chunk->Voisins[0] == nullptr && chunk->_XPos - 1 == val->_XPos)
+			{
+				if (chunk->_YPos == val->_YPos && chunk->_ZPos == val->_ZPos)
 				{
-					MChunk * cxPrev = NULL;
-					if(x > 0)
-						cxPrev = Chunks[x-1][y][z];
-					MChunk * cxNext = NULL;
-					if(x < MAT_SIZE-1)
-						cxNext = Chunks[x+1][y][z];
-
-					MChunk * cyPrev = NULL;
-					if(y > 0)
-						cyPrev = Chunks[x][y-1][z];
-					MChunk * cyNext = NULL;
-					if(y < MAT_SIZE-1)
-						cyNext = Chunks[x][y+1][z];
-
-					MChunk * czPrev = NULL;
-					if(z > 0)
-						czPrev = Chunks[x][y][z-1];
-					MChunk * czNext = NULL;
-					if(z < MAT_HEIGHT-1)
-						czNext = Chunks[x][y][z+1];
-
-					Chunks[x][y][z]->setVoisins(cxPrev,cxNext,cyPrev,cyNext,czPrev,czNext);
+					chunk->Voisins[0] = val;
+					val->Voisins[1] = chunk;
 				}
-
 					
+			}
+			else if (chunk->Voisins[1] == nullptr && chunk->_XPos + 1 == val->_XPos)
+			{
+				if (chunk->_YPos == val->_YPos && chunk->_ZPos == val->_ZPos)
+				{
+					chunk->Voisins[1] = val;
+					val->Voisins[0] = chunk;
+				}
+					
+			}
+			else if (chunk->Voisins[2] == nullptr && chunk->_YPos - 1 == val->_YPos)
+			{
+				if (chunk->_XPos == val->_XPos && chunk->_ZPos == val->_ZPos)
+				{
+					chunk->Voisins[2] = val;
+					val->Voisins[3] = chunk;
+				}
+					
+			}
+			else if (chunk->Voisins[3] == nullptr && chunk->_YPos + 1 == val->_YPos)
+			{
+				if (chunk->_XPos == val->_XPos && chunk->_ZPos == val->_ZPos)
+				{
+					chunk->Voisins[3] = val;
+					val->Voisins[2] = chunk;
+				}
+					
+			}
+			else if (chunk->Voisins[4] == nullptr && chunk->_ZPos - 1 == val->_ZPos)
+			{
+				if (chunk->_XPos == val->_XPos && chunk->_YPos == val->_YPos)
+				{
+					chunk->Voisins[4] = val;
+					val->Voisins[5] = chunk;
+				}
+					
+			}
+			else if (chunk->Voisins[5] == nullptr && chunk->_ZPos + 1 == val->_ZPos)
+			{
+				if (chunk->_XPos == val->_XPos && chunk->_YPos == val->_YPos)
+				{
+					chunk->Voisins[5] = val;
+					val->Voisins[4] = chunk;
+				}
+			}
+		}
 	}
 
 	//TODO: change this to the current chunk !
 
-	inline MCube * getCube(int x, int y, int z)
+	/*inline MCube * getCube(int x, int y, int z)
 	{	
 		if(x < 0)x = 0;
 		if(y < 0)y = 0;
@@ -119,6 +150,33 @@ public :
 		if(z >= MAT_HEIGHT * MChunk::CHUNK_SIZE) z = (MAT_HEIGHT * MChunk::CHUNK_SIZE)-1;
 
 		return &(Chunks[x / MChunk::CHUNK_SIZE][y / MChunk::CHUNK_SIZE][z / MChunk::CHUNK_SIZE]->_Cubes[x % MChunk::CHUNK_SIZE][y % MChunk::CHUNK_SIZE][z % MChunk::CHUNK_SIZE]);
+	}*/
+
+	inline MCube* getCube(int x, int y, int z)
+	{
+		if (x < 0)x = 0;
+		if (y < 0)y = 0;
+		if (z < 0)z = 0;
+
+		if (x >= MAT_SIZE * MChunk::CHUNK_SIZE) x = (MAT_SIZE * MChunk::CHUNK_SIZE) - 1;
+		if (y >= MAT_SIZE * MChunk::CHUNK_SIZE) y = (MAT_SIZE * MChunk::CHUNK_SIZE) - 1;
+		if (z >= MAT_HEIGHT * MChunk::CHUNK_SIZE) z = (MAT_HEIGHT * MChunk::CHUNK_SIZE) - 1;
+
+		int xIndex = x / MChunk::CHUNK_SIZE;
+		int yIndex = y / MChunk::CHUNK_SIZE;
+		int zIndex = z / MChunk::CHUNK_SIZE;
+
+		for (auto chunk : chunks)
+		{
+			if(chunk->_XPos == xIndex 
+				&& chunk->_YPos == yIndex
+				&& chunk->_ZPos == zIndex)
+			{
+				return chunk->getCubeAt(x, y, z);
+			}
+		}
+
+		return nullptr;
 	}
 
 	void updateCube(int x, int y, int z)
@@ -180,6 +238,7 @@ public :
 				chunk->toVbos();
 
 				std::lock_guard<std::mutex> lock(chunkierMutex);
+				SetVoisins(chunk);
 				chunkier.push_back(chunk);
 			}
 			else
@@ -220,7 +279,8 @@ public :
 									cube->setType(MCube::CUBE_PIERRE);
 							}
 				}
-				
+
+				SetVoisins(chunk);
 				chunks.push_back(chunk);
 				chunk->disableHiddenCubes();
 
@@ -406,20 +466,6 @@ public :
 		playerChunkPosition = pos;
 	}
 
-	void add_world_to_vbo(void)
-	{
-		for (int x = 0; x<MAT_SIZE; x++)
-			for (int y = 0; y<MAT_SIZE; y++)
-				for (int z = 0; z<MAT_HEIGHT; z++)
-				{
-					Chunks[x][y][z]->toVbos();
-				}
-	}
-
-	void add_world_to_vbo(int x, int y, int z)
-	{
-		Chunks[x][y][z]->toVbos();
-	}
 	
 	//Boites de collisions plus petites que deux cubes
 	MAxis getMinCol(YVec3f pos, YVec3f dir, float width, float height, float & valueColMin, bool oneShot)

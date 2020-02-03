@@ -38,6 +38,8 @@ private:
 
 	GUILabel* camPosition;
 
+	MAvatar* avatar;
+
 public :
 	//Gestion singleton
 	static YEngine * getInstance()
@@ -245,6 +247,8 @@ public :
 	{
 		YLog::log(YLog::ENGINE_INFO,"Minicraft Started : initialisation");
 
+		
+
 		Renderer->setBackgroundColor(YColor(0.0f,0.0f,0.0f,1.0f));
 		Renderer->Camera->setPosition(YVec3f(10, 10, 10));
 		Renderer->Camera->setLookAt(YVec3f());
@@ -273,6 +277,9 @@ public :
 		camPosition->X = 150;
 
 		this->ScreenStats->addElement(camPosition);
+
+		avatar = new MAvatar(Renderer->Camera, world);
+		avatar->vbo = createVBO();
 	}
 
 
@@ -351,17 +358,15 @@ public :
 
 	void CheckForInputs()
 	{
-		YVec3f movementVector = YVec3f();
-		if(isZing)
-			movementVector.X = DeltaTime * 10;
-		else if (isSing)
-			movementVector.X = -DeltaTime * 10;
-		if(isQing)
-			movementVector.Y = -DeltaTime * 10;
-		else if(isDing)
-			movementVector.Y = DeltaTime * 10;
 
-		Renderer->Camera->move(movementVector);
+		if (isZing)
+			avatar->avance = true;
+		else if (isSing)
+			avatar->recule = true;
+		if (isQing)
+			avatar->gauche = true;
+		else if (isDing)
+			avatar->droite = true;
 	}
 
 	void update(float elapsed) 
@@ -386,6 +391,7 @@ public :
 		CheckForInputs();
 
 		world->update();
+		avatar->update(elapsed);
 	}
 
 	void renderObjects() 
@@ -421,6 +427,13 @@ public :
 
 		world->render_world_vbo(true, true);
 
+		glPushMatrix();
+	
+		glTranslatef(avatar->Position.X, avatar->Position.Y, avatar->Position.Z);
+		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
+		Renderer->sendMatricesToShader(ShaderCubeDebug);
+		avatar->vbo->render();
+		glPopMatrix();
 	}
 
 	void resize(int width, int height) {
@@ -534,7 +547,13 @@ public :
 			}
 			else
 			{
-				Renderer->Camera->move(YVec3f(deltaY / 400.0f, deltaX / 400.0f, 0));
+				//Renderer->Camera->move(YVec3f(deltaY / 400.0f, deltaX / 400.0f, 0));
+				YVec3f delta(deltaY, deltaX, 0);
+				YVec3f position;
+				position += Renderer->Camera->Direction * delta.X;
+				position += Renderer->Camera->RightVec * delta.Y;
+				position += Renderer->Camera->UpVec * delta.Z;
+				avatar->AddForce(position);
 			}
 			showMouse(false);
 			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
