@@ -10,7 +10,6 @@ class MAvatar
 {
 public:
 	YVec3f Position;
-	YVec3f Speed;
 
 	bool Move;
 	bool Jump;
@@ -25,6 +24,8 @@ public:
 	bool InWater;
 	bool Crouch;
 	bool Run;
+
+	float maxSpeed = 70;
 
 	YCamera * Cam;
 	MWorld * World;
@@ -42,8 +43,8 @@ public:
 
 	MAvatar(YCamera * cam, MWorld * world)
 	{
-		Position = YVec3f(10, 10, 100);
-		Height = 1.8f;
+		Position = YVec3f(10, 10, 150);
+		Height = 1.f;
 		CurrentHeight = Height;
 		Width = 0.3f;
 		Cam = cam;
@@ -60,7 +61,7 @@ public:
 
 		mass = 75.0f;
 
-		gravity = YVec3f(0, 0, -1) * 9.81f * mass;
+		gravity = YVec3f(0, 0, -1) * 9.81f;
 		damping = YVec3f(1, 1, 1);
 	}
 
@@ -83,62 +84,102 @@ public:
 			elapsed = 1.0f / 60.0f;
 
 		if (avance)
-			sumForces += Cam->Direction * 100;
+			sumForces += Cam->Direction;
 		else if(recule)
-			sumForces -= Cam->Direction * 100;
+			sumForces -= Cam->Direction;
 		if(gauche)
-			sumForces -= Cam->RightVec * 100;
+			sumForces -= Cam->RightVec;
 		else if(droite)
-			sumForces += Cam->RightVec * 100;
+			sumForces += Cam->RightVec;
+
+		if(!Standing)
+			sumForces += gravity;
+
+		if (Jump)
+		{
+			sumForces += YVec3f(0, 0, 1) * 2.5f / elapsed;
+			Jump = false;
+		}
+
+		//On met une limite a sa vitesse horizontale
+		float speedmax = 70;
+		if (Crouch)
+			speedmax = 45;
+		if (!Standing)
+			speedmax = 70;
+		if (Run)
+			speedmax = 140;
+
+		YVec3f horSpeed = velocity;
+		horSpeed.Z = 0;
+		if (horSpeed.getSize() > speedmax)
+		{
+			horSpeed.normalize();
+			horSpeed *= speedmax;
+			velocity.X = horSpeed.X;
+			velocity.Y = horSpeed.Y;
+		}
+			
 		
-		sumForces /= mass;
+		//sumForces /= mass;
 
 		velocity = velocity + sumForces * elapsed;
 		velocity = velocity * damping;
-		YVec3f newPos;
-		YVec3f direction;
-		newPos = Position + velocity * elapsed;
 
-		direction = Position - newPos;
-		Position = newPos;
 		
-		float value = 0;
+		Position = Position + (velocity * elapsed);
+
 		
-		bool resolved = World->chunks.empty();
+		
 
-		if (resolved)
-			sumForces += gravity;
+		//todo: clamp vertical and horizontal speed
+		
+		if (_TimerStanding.getElapsedSeconds() > 0.01f)
+			Standing = false;
 
-		while(!resolved)
+
+		for (int pass = 0; pass < 2; ++pass)
 		{
-			MWorld::MAxis m = World->getMinCol(Position, direction.normalize(), Width, CurrentHeight, value, true);
+			//3 times seeing the future and 3 times normal
+			for (int i = 0; i < 6; ++i)
+			{
+				float value = 0;
+				MWorld::MAxis m = World->getMinCol(Position, velocity, Width, CurrentHeight, value, i < 3);
 
-			if (m & MWorld::AXIS_X)
-			{
-				cout << "Collision X" << endl;
-				Position -= YVec3f(1, 0, 0) * value;
+				if (m & MWorld::AXIS_X)
+				{
+					YLog::log(YLog::ENGINE_INFO, ("x " + toString(value)).c_str());
+					Position.X += value;
+					velocity.X = 0;
+				}
+				if (m & MWorld::AXIS_Y)
+				{
+					YLog::log(YLog::ENGINE_INFO, ("y " + toString(value)).c_str());
+					Position.Y += value;
+					velocity.Y = 0;
+				}
+				if (m & MWorld::AXIS_Z)
+				{
+					YLog::log(YLog::ENGINE_INFO, ("z " + toString(value)).c_str());
+					Position.Z += value;
+					velocity.Z = 0;
+
+					Standing = true;
+					_TimerStanding.start();
+				}
+				
 			}
-			else if (m & MWorld::AXIS_Y)
-			{
-				cout << "Collision Y" << endl;
-				Position -= YVec3f(0, 1, 0) * value;
-			}
-			else if (m & MWorld::AXIS_Z)
-			{
-				cout << "Collision Z" << endl;
-				Position -= YVec3f(0, 0, 1) * value;
-			}
-			else
-				resolved = true;
+			
 		}
 		
 		
-		Cam->moveTo(Position - Cam->Direction);
+		Cam->moveTo(Position - (Cam->Direction * 2.0f));
 
 		resetDirections();
 		
-		sumForces *= 0;
+		sumForces.X = 0;
+		sumForces.Y = 0;
+		sumForces.Z = 0;
 	}
 };
-
 #endif

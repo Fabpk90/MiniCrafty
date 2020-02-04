@@ -429,7 +429,7 @@ public :
 
 		glPushMatrix();
 	
-		glTranslatef(avatar->Position.X, avatar->Position.Y, avatar->Position.Z);
+		glTranslatef(avatar->Position.X - 0.3f, avatar->Position.Y - 0.3f, avatar->Position.Z - 0.5f);
 		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
 		Renderer->sendMatricesToShader(ShaderCubeDebug);
 		avatar->vbo->render();
@@ -463,6 +463,9 @@ public :
 			case 100: //d
 				isDing = down;
 				break;
+			case 32: //space
+				avatar->Jump = down;
+				break;
 			}
 		}
 		else
@@ -475,6 +478,7 @@ public :
 
 			case GLUT_KEY_SHIFT_L:
 				Renderer->Camera->boost = down;
+				break;
 			default:
 				break;
 			}

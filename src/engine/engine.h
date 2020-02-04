@@ -36,8 +36,8 @@ public:
 	int MainWindowId;
 	bool MouseVisible = true;
 	bool FullScreen = false;
-	const int BaseWidth = 1280;
-	const int BaseHeight = 720;
+	const int BaseWidth = 800;
+	const int BaseHeight = 600;
 
 	//GUI 
 	int MouseBtnState = 0;

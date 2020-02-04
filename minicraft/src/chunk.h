@@ -493,7 +493,7 @@ class MChunk
 						nbOccur--;
 
 						//TODO: inline this to get some juicy perf
-						_Cubes[x][y][z].setType(cubeType);
+						_Cubes[x][y][z].setType((MCube::MCubeType)cubeType);
 					}
 				}
 			

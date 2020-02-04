@@ -158,10 +158,6 @@ public :
 		if (y < 0)y = 0;
 		if (z < 0)z = 0;
 
-		if (x >= MAT_SIZE * MChunk::CHUNK_SIZE) x = (MAT_SIZE * MChunk::CHUNK_SIZE) - 1;
-		if (y >= MAT_SIZE * MChunk::CHUNK_SIZE) y = (MAT_SIZE * MChunk::CHUNK_SIZE) - 1;
-		if (z >= MAT_HEIGHT * MChunk::CHUNK_SIZE) z = (MAT_HEIGHT * MChunk::CHUNK_SIZE) - 1;
-
 		int xIndex = x / MChunk::CHUNK_SIZE;
 		int yIndex = y / MChunk::CHUNK_SIZE;
 		int zIndex = z / MChunk::CHUNK_SIZE;
@@ -178,7 +174,7 @@ public :
 
 		return nullptr;
 	}
-
+	//todo: update this
 	void updateCube(int x, int y, int z)
 	{	
 		if(x < 0)x = 0;
@@ -217,6 +213,9 @@ public :
 	{
 		*done = false;
 		YDumberPerlin n = YDumberPerlin();
+		n.updateVecs();
+
+		//n.setZDecay(MWorld::MAT_HEIGHT_CUBES - 5, 0.5f);
 		
 		while(!chunkList.empty())
 		{
@@ -343,9 +342,12 @@ public :
 			for (int y = 0; y < MAT_SIZE; y++)
 				for (int z = 0; z < MAT_HEIGHT; z++)
 					chunkList.emplace_back(x, y, z);
-		
-		chunker1 = std::thread(&MWorld::threadChunkHandler, this, &chunker1Done);
-		chunker2 = std::thread(&MWorld::threadChunkHandler, this, &chunker2Done);
+
+		bool yes = false;
+		for (int i = 0; i < chunkList.size(); ++i)
+		{
+			threadChunkHandler(&yes);
+		}
 	}
 
 	void update()
@@ -470,9 +472,15 @@ public :
 	//Boites de collisions plus petites que deux cubes
 	MAxis getMinCol(YVec3f pos, YVec3f dir, float width, float height, float & valueColMin, bool oneShot)
 	{
+
 		int x = (int)(pos.X / MCube::CUBE_SIZE);
 		int y = (int)(pos.Y / MCube::CUBE_SIZE);
 		int z = (int)(pos.Z / MCube::CUBE_SIZE);
+		
+		if (getCube(x, y, z) == nullptr) return 0;
+
+		
+		
 
 		int xNext = (int)((pos.X + width / 2.0f) / MCube::CUBE_SIZE);
 		int yNext = (int)((pos.Y + width / 2.0f) / MCube::CUBE_SIZE);
@@ -481,7 +489,7 @@ public :
 		int xPrev = (int)((pos.X - width / 2.0f) / MCube::CUBE_SIZE);
 		int yPrev = (int)((pos.Y - width / 2.0f) / MCube::CUBE_SIZE);
 		int zPrev = (int)((pos.Z - height / 2.0f) / MCube::CUBE_SIZE);
-
+		
 		if (x < 0)	x = 0;
 		if (y < 0)	y = 0;
 		if (z < 0)	z = 0;
