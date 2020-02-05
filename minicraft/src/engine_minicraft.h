@@ -28,6 +28,7 @@ private:
 	bool isRightClicking = false;
 	bool isCtrling = false;
 	bool isMiddleClicking = false;
+	bool isLeftClicking = false;
 
 	bool isZing;
 	bool isSing;
@@ -392,7 +393,7 @@ public :
 
 		world->update();
 		avatar->update(elapsed);
-		Renderer->Camera->moveTo(avatar->Position - Renderer->Camera->Direction * 3.0f);
+		Renderer->Camera->moveTo(avatar->Position + Renderer->Camera->Direction + YVec3f(0, 0, avatar->CurrentHeight / 2));
 	}
 
 	void renderObjects() 
@@ -412,6 +413,10 @@ public :
 		glVertex3d(0, 0, 10000);
 		glEnd();		
 
+		if (isLeftClicking)
+			avatar->updateRaycast();
+	
+			avatar->RayCast();
 		
 		glPushMatrix();
 		
@@ -437,6 +442,8 @@ public :
 		avatar->vbo->render();
 		
 		glPopMatrix();
+
+		
 	}
 
 	void resize(int width, int height) {
@@ -510,20 +517,17 @@ public :
 
 	}
 
+	
+
 	void mouseClick(int button, int state, int x, int y, bool inUi)
 	{
 		isRightClicking = button == 2 && state == 0;
 		isMiddleClicking = button == 1 && state == 0;
-
+		isLeftClicking = button == 0 && state == 0;
 		if (isRightClicking || isMiddleClicking)
 		{
 			showMouse(false);
 			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
-		}
-
-		if(button == 0 && state == 0)
-		{
-			
 		}
 	}
 

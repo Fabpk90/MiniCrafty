@@ -41,6 +41,9 @@ public:
 	YVec3f sumForces;
 	YVec3f damping;
 
+	YVec3f startPos;
+	YVec3f endPos;
+
 	MAvatar(YCamera * cam, MWorld * world)
 	{
 		Position = YVec3f(10, 10, 120);
@@ -78,15 +81,25 @@ public:
 		droite = false;
 	}
 
+	void updateRaycast()
+	{
+		startPos = Cam->Position;
+		endPos = (Cam->LookAt - startPos).normalize() + startPos;
+
+	}
+
 	void RayCast()
 	{
-		YVec3f viewDirection = Cam->Direction - Position;
-		viewDirection = viewDirection.normalize();
+		//YVec3f viewDirection =  Cam->Direction - Position;
+		//viewDirection = viewDirection.normalize();
+
 		
 		glBegin(GL_LINES);
-		glColor3f(1.0f, 0.0f, 0.0f);
-		glVertex3f(Position.X, Position.Y, Position.Z);
-		glVertex3f(Position.X + viewDirection.X * 2, Position.Y + viewDirection.Y * 2, Position.Z + viewDirection.Z * 2);
+		glColor3d(1, 1, 1);
+		
+		glVertex3f(startPos.X, startPos.Y, startPos.Z);
+		glVertex3f(endPos.X, endPos.Y, endPos.Z);
+		
 		glEnd();
 	}
 	
