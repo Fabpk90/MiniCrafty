@@ -392,6 +392,7 @@ public :
 
 		world->update();
 		avatar->update(elapsed);
+		Renderer->Camera->moveTo(avatar->Position - Renderer->Camera->Direction * 3.0f);
 	}
 
 	void renderObjects() 
@@ -429,10 +430,12 @@ public :
 
 		glPushMatrix();
 	
-		glTranslatef(avatar->Position.X - 0.3f, avatar->Position.Y - 0.3f, avatar->Position.Z - 0.5f);
+		glTranslatef(avatar->Position.X - avatar->Width / 2, avatar->Position.Y - avatar->Width / 2, avatar->Position.Z - avatar->CurrentHeight / 2);
+		glScalef(avatar->Width, avatar->Width, avatar->CurrentHeight);
 		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
 		Renderer->sendMatricesToShader(ShaderCubeDebug);
 		avatar->vbo->render();
+		
 		glPopMatrix();
 	}
 
@@ -477,7 +480,8 @@ public :
 				break;
 
 			case GLUT_KEY_SHIFT_L:
-				Renderer->Camera->boost = down;
+				//Renderer->Camera->boost = down;
+				avatar->Run = down;
 				break;
 			default:
 				break;
@@ -515,6 +519,11 @@ public :
 		{
 			showMouse(false);
 			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
+		}
+
+		if(button == 0 && state == 0)
+		{
+			
 		}
 	}
 

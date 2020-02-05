@@ -168,7 +168,7 @@ public :
 				&& chunk->_YPos == yIndex
 				&& chunk->_ZPos == zIndex)
 			{
-				return chunk->getCubeAt(x, y, z);
+				return chunk->getCubeAt(x % MChunk::CHUNK_SIZE, y % MChunk::CHUNK_SIZE, z % MChunk::CHUNK_SIZE);
 			}
 		}
 

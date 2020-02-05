@@ -43,10 +43,10 @@ public:
 
 	MAvatar(YCamera * cam, MWorld * world)
 	{
-		Position = YVec3f(10, 10, 150);
-		Height = 1.f;
+		Position = YVec3f(10, 10, 120);
+		Height = 1.8f;
 		CurrentHeight = Height;
-		Width = 0.3f;
+		Width = 0.5f;
 		Cam = cam;
 		avance = false;
 		recule = false;
@@ -78,28 +78,74 @@ public:
 		droite = false;
 	}
 
+	void RayCast()
+	{
+		YVec3f viewDirection = Cam->Direction - Position;
+		viewDirection = viewDirection.normalize();
+		
+		glBegin(GL_LINES);
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glVertex3f(Position.X, Position.Y, Position.Z);
+		glVertex3f(Position.X + viewDirection.X * 2, Position.Y + viewDirection.Y * 2, Position.Z + viewDirection.Z * 2);
+		glEnd();
+	}
+	
 	void update(float elapsed)
 	{
 		if (elapsed > 1.0f / 60.0f)
 			elapsed = 1.0f / 60.0f;
 
+		//Par defaut, on applique la gravité (-100 sur Z), la moitie si dans l'eau
+		YVec3f force = YVec3f(0, 0, -1) * 9.81f;
+		if (InWater)
+			force = YVec3f(0, 0, -1) * 0.5f;
+
+		float lastheight = CurrentHeight;
+		CurrentHeight = Height;
+		if (Crouch)
+			CurrentHeight = Height / 2;
+
+		//Pour ne pas s'enfoncer dans le sol en une frame quand on se releve
+		if (CurrentHeight > lastheight)
+			Position.Z += Height / 4;
+
+		//Si l'avatar n'est pas au sol, alors il ne peut pas sauter
+		/*if (!Standing && !InWater) //On jump tout le temps
+		Jump = false;*/
+
+		float accel = 40;
+		if (Crouch)
+			accel = 20;
+		if (!Standing)
+			accel = 5;
+		if (Run)
+			accel = 80;
+
+		YVec3f forward(Cam->Direction.X, Cam->Direction.Y, 0);
+		forward.normalize();
+		YVec3f right(Cam->RightVec.X, Cam->RightVec.Y, 0);
+		right.normalize();
+
+		//On applique les controles en fonction de l'accélération
 		if (avance)
-			sumForces += Cam->Direction;
-		else if(recule)
-			sumForces -= Cam->Direction;
-		if(gauche)
-			sumForces -= Cam->RightVec;
-		else if(droite)
-			sumForces += Cam->RightVec;
+			force += forward * accel;
+		if (recule)
+			force += forward * -accel;
+		if (gauche)
+			force += right * -accel;
+		if (droite)
+			force += right * accel;
 
-		if(!Standing)
-			sumForces += gravity;
 
+		//On applique le jump
 		if (Jump)
 		{
-			sumForces += YVec3f(0, 0, 1) * 2.5f / elapsed;
+			force += YVec3f(0, 0, 1) * 5.0f / elapsed; //(impulsion, pas fonction du temps)
 			Jump = false;
 		}
+
+		//On applique les forces en fonction du temps écoulé
+		velocity += force * elapsed;
 
 		//On met une limite a sa vitesse horizontale
 		float speedmax = 70;
@@ -119,67 +165,77 @@ public:
 			velocity.X = horSpeed.X;
 			velocity.Y = horSpeed.Y;
 		}
-			
-		
-		//sumForces /= mass;
 
-		velocity = velocity + sumForces * elapsed;
-		velocity = velocity * damping;
+		//On le déplace, en sauvegardant son ancienne position
+		YVec3f oldPosition = Position;
+		Position += (velocity * elapsed);
 
-		
-		Position = Position + (velocity * elapsed);
+		//YLog::log(YLog::ENGINE_INFO, ("zS " + toString(Speed.Z)).c_str());
 
-		
-		
-
-		//todo: clamp vertical and horizontal speed
-		
-		if (_TimerStanding.getElapsedSeconds() > 0.01f)
+		if (_TimerStanding.getElapsedSeconds() > 0.01)
 			Standing = false;
-
-
-		for (int pass = 0; pass < 2; ++pass)
+		for (int pass = 0; pass < 2; pass++)
 		{
-			//3 times seeing the future and 3 times normal
-			for (int i = 0; i < 6; ++i)
+			for (int i = 0; i < 6; i++)
 			{
-				float value = 0;
-				MWorld::MAxis m = World->getMinCol(Position, velocity, Width, CurrentHeight, value, i < 3);
-
-				if (m & MWorld::AXIS_X)
+				float valueColMin = 0;
+				MWorld::MAxis axis = World->getMinCol(Position, velocity, Width, CurrentHeight, valueColMin, i < 3);
+				//YLog::log(YLog::ENGINE_INFO,"check");
+				if (axis != 0)
 				{
-					YLog::log(YLog::ENGINE_INFO, ("x " + toString(value)).c_str());
-					Position.X += value;
-					velocity.X = 0;
+					//valueColMin = nymax(nyabs(valueColMin), 0.0001f) * (valueColMin > 0 ? 1.0f : -1.0f);
+					if (axis & MWorld::AXIS_X)
+					{
+						//YLog::log(YLog::ENGINE_INFO,("x " + toString(valueColMin)).c_str());
+						Position.X += valueColMin + 0.001 * sign(valueColMin);
+						velocity.X = 0;
+					}
+					if (axis & MWorld::AXIS_Y)
+					{
+						//YLog::log(YLog::ENGINE_INFO, ("y " + toString(valueColMin)).c_str());
+						Position.Y += valueColMin + 0.001 * sign(valueColMin);
+						velocity.Y = 0;
+					}
+					if (axis & MWorld::AXIS_Z)
+					{
+						//YLog::log(YLog::ENGINE_INFO, ("z " + toString(valueColMin)).c_str());
+						velocity.Z = 0;
+						Position.Z += valueColMin + 0.001 * sign(valueColMin);
+						Standing = true;
+						_TimerStanding.start();
+					}
 				}
-				if (m & MWorld::AXIS_Y)
-				{
-					YLog::log(YLog::ENGINE_INFO, ("y " + toString(value)).c_str());
-					Position.Y += value;
-					velocity.Y = 0;
-				}
-				if (m & MWorld::AXIS_Z)
-				{
-					YLog::log(YLog::ENGINE_INFO, ("z " + toString(value)).c_str());
-					Position.Z += value;
-					velocity.Z = 0;
-
-					Standing = true;
-					_TimerStanding.start();
-				}
-				
 			}
-			
 		}
-		
-		
-		Cam->moveTo(Position - (Cam->Direction * 2.0f));
+
+		int x = (int)(Position.X / MCube::CUBE_SIZE);
+		int y = (int)(Position.Y / MCube::CUBE_SIZE);
+		int z = (int)(Position.Z / MCube::CUBE_SIZE);
+
+		//Escaliers
+		float floatheight = 1.0f;
+		float zpied = Position.Z - (Height / 2.0f);
+		float zfloatpied = zpied - floatheight;
+		int izCubeDessousFloat = (int)((zfloatpied) / MCube::CUBE_SIZE);
+		float zCubeDessous2Float = zfloatpied - MCube::CUBE_SIZE;
+		int izCubeDessous2Float = (int)(zCubeDessous2Float / MCube::CUBE_SIZE);
+
+
+		//Si on est dans l'eau
+		InWater = false;
+		if (World->getCube(x, y, z) != nullptr && 
+			World->getCube(x, y, z)->getType() == MCube::CUBE_EAU)
+			InWater = true;
+
+		if (InWater)
+		{
+			//Standing = true;
+			velocity *= pow(0.2f, elapsed);
+		}
+		else if (Standing)
+			velocity *= pow(0.01f, elapsed);
 
 		resetDirections();
-		
-		sumForces.X = 0;
-		sumForces.Y = 0;
-		sumForces.Z = 0;
 	}
 };
 #endif
