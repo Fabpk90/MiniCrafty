@@ -177,16 +177,20 @@ public :
 	//todo: update this
 	void updateCube(int x, int y, int z)
 	{	
-		if(x < 0)x = 0;
-		if(y < 0)y = 0;
-		if(z < 0)z = 0;
-		if(x >= MAT_SIZE * MChunk::CHUNK_SIZE)x = (MAT_SIZE * MChunk::CHUNK_SIZE)-1;
-		if(y >= MAT_SIZE * MChunk::CHUNK_SIZE)y = (MAT_SIZE * MChunk::CHUNK_SIZE)-1;
-		if (z >= MAT_HEIGHT * MChunk::CHUNK_SIZE)z = (MAT_HEIGHT * MChunk::CHUNK_SIZE) - 1; {
-			Chunks[x / MChunk::CHUNK_SIZE][y / MChunk::CHUNK_SIZE][z / MChunk::CHUNK_SIZE]->disableHiddenCubes();
-			Chunks[x / MChunk::CHUNK_SIZE][y / MChunk::CHUNK_SIZE][z / MChunk::CHUNK_SIZE]->toVbos();
+		int xIndex = x / MChunk::CHUNK_SIZE;
+		int yIndex = y / MChunk::CHUNK_SIZE;
+		int zIndex = z / MChunk::CHUNK_SIZE;
+
+		for (auto chunk : chunks)
+		{
+			if (chunk->_XPos == xIndex
+				&& chunk->_YPos == yIndex
+				&& chunk->_ZPos == zIndex)
+			{
+				chunk->disableHiddenCubes();
+				chunk->toVbos();
+			}
 		}
-		
 	}
 
 	void deleteCube(int x, int y, int z)

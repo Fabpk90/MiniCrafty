@@ -5,6 +5,7 @@
 #include "engine/render/camera.h"
 #include "engine/utils/timer.h"
 #include "world.h"
+#include "../physics.h"
 
 class MAvatar
 {
@@ -85,31 +86,109 @@ public:
 	void RayCast()
 	{
 		startPos = Cam->Position;
-		endPos = (Cam->LookAt - startPos).normalize() + startPos;
+		endPos = (Cam->LookAt - startPos).normalize() * 10 + startPos;
 
-		MChunk* chunk = World->getChunkAt(Position.X / MChunk::CHUNK_SIZE, Position.Y / MChunk::CHUNK_SIZE, Position.Z / MChunk::CHUNK_SIZE);
+		int xAvatar, yAvatar, zAvatar;
 
-		if(chunk != nullptr)
+		xAvatar = Position.X / MChunk::CHUNK_SIZE;
+		yAvatar = Position.Y / MChunk::CHUNK_SIZE;
+		zAvatar = Position.Z / MChunk::CHUNK_SIZE;
+		
+		MChunk* chunk = World->getChunkAt(xAvatar, yAvatar, zAvatar);
+
+		if(chunk != nullptr) // if in a chunk
 		{
-			MCube** cubeXPrev = NULL;
-			MCube** cubeXNext = NULL;
-			MCube** cubeYPrev = NULL;
-			MCube** cubeYNext = NULL;
-			MCube** cubeZPrev = NULL;
-			MCube** cubeZNext = NULL;
-			
-			chunk->get_surrounding_cubes(Position.X, Position.Y, Position.Z,
-				cubeXPrev, cubeXNext, cubeYPrev, cubeYNext, cubeZPrev, cubeZNext);
+			int xDeb = ( (int)Position.X % MChunk::CHUNK_SIZE )- 5;
+			int yDeb = ((int)Position.Y % MChunk::CHUNK_SIZE) - 5;
+			int zDeb = ((int)Position.Z % MChunk::CHUNK_SIZE) - 5;
 
+			
+			int xFin = ((int)Position.X % MChunk::CHUNK_SIZE) + 5;
+			int yFin = ((int)Position.Y % MChunk::CHUNK_SIZE) + 5;
+			int zFin = ((int)Position.Z % MChunk::CHUNK_SIZE) + 5;
+			
 			//todo: discard cube that the avatar is not facing towards
 
-			if(*cubeXNext != NULL)
-			{
-				if((*cubeXNext)->isSolid()) // can be broken
-				{
-					
-				}
-			}
+			const int size = MCube::CUBE_SIZE;
+			
+			for (int x = xDeb; x <= xFin; x++)
+				for (int y = yDeb; y <= yFin; y++)
+					for (int z = zDeb; z <= zFin; z++)
+					{
+						MCube* cube = chunk->getCubeAt(x, y, z);
+
+						if(cube->isSolid() && cube->getDraw())
+						{
+							//Check for the faces
+
+							const int trueX = (x * size);
+							const int trueY = (y * size);
+							const int trueZ = (z * size);
+
+							//Face 1
+							YVec3f a = YVec3f(trueX, trueY, trueZ + size);
+							YVec3f b = YVec3f(trueX + size, trueY, trueZ + size);
+							YVec3f c = YVec3f(trueX + size, trueY + size, trueZ + size);
+							YVec3f d = YVec3f(trueX, trueY + size, trueZ + size);
+
+							if(Physics::isIntersectingTriangle(startPos, endPos, a, b, c, d))
+							{
+								World->deleteCube(x, y, z);
+							}
+
+							b = YVec3f(trueX, trueY, trueZ);
+							c = YVec3f(trueX, trueY + size, trueZ);
+							d = YVec3f(trueX + size, trueY + size, trueZ);
+							a = YVec3f(trueX + size, trueY, trueZ);
+
+							if (Physics::isIntersectingTriangle(startPos, endPos, a, b, c, d))
+							{
+								World->deleteCube(x, y, z);
+							}
+
+							// XZ
+							a = YVec3f(trueX, trueY, trueZ);
+							b = YVec3f(trueX + size, trueY, trueZ);
+							c = YVec3f(trueX + size, trueY, trueZ + size);
+							d = YVec3f(trueX, trueY, trueZ + size);
+
+							if (Physics::isIntersectingTriangle(startPos, endPos, a, b, c, d))
+							{
+								World->deleteCube(x, y, z);
+							}
+
+							b = YVec3f(trueX, trueY + size, trueZ);
+							c = YVec3f(trueX, trueY + size, trueZ + size);
+							d = YVec3f(trueX + size, trueY + size, trueZ + size);
+							a = YVec3f(trueX + size, trueY + size, trueZ);
+
+							if (Physics::isIntersectingTriangle(startPos, endPos, a, b, c, d))
+							{
+								World->deleteCube(x, y, z);
+							}
+
+							// YZ
+							b = YVec3f(trueX, trueY, trueZ);
+							c = YVec3f(trueX, trueY, trueZ + size);
+							d = YVec3f(trueX, trueY + size, trueZ + size);
+							a = YVec3f(trueX, trueY + size, trueZ);
+
+							if (Physics::isIntersectingTriangle(startPos, endPos, a, b, c, d))
+							{
+								World->deleteCube(x, y, z);
+							}
+
+							a = YVec3f(trueX + size, trueY, trueZ);
+							b = YVec3f(trueX + size, trueY + size, trueZ);
+							c = YVec3f(trueX + size, trueY + size, trueZ + size);
+							d = YVec3f(trueX + size, trueY, trueZ + size);
+
+							if (Physics::isIntersectingTriangle(startPos, endPos, a, b, c, d))
+							{
+								World->deleteCube(x, y, z);
+							}
+						}
+					}
 		}
 		
 		

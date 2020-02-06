@@ -13,12 +13,12 @@ public:
 		//on prend un point de dans le plan et on fait un produit scalaire
 		//on neg ce produit pour avoir d
 		//
-		//en gros t = -beta/alpha  (c.f. la ptite feuille blanche sur le bureai, en gros on développe l'équation du plan)
+		//en gros t = -beta/alpha  (c.f. la ptite feuille blanche sur le bureau, en gros on développe l'équation du plan)
 
 		float d = -planeNormal.dot(pointInPlan);
 
 		float beta = planeNormal.dot(startLine) + d;
-		float alpha = planeNormal.dot(endLine) - planeNormal.dot(startLine);
+		float alpha = planeNormal.dot(endLine-startLine);
 
 		t = -beta / alpha;
 
@@ -33,7 +33,7 @@ public:
 		
 		if (isIntersecting(startLine, endLine, A, planNormal, t))
 		{
-			YVec3f P = A + ((A - B) * t);
+			YVec3f P = startLine + ((endLine - startLine) * t);
 
 			YVec3f ABAP = (A - B).cross(A - P);
 			YVec3f BCBP = (B - C).cross(B - P);
