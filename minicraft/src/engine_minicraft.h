@@ -7,6 +7,7 @@
 #include "world.h"
 #include <windows.h>
 #include "world.h"
+#include "../physics.h"
 
 class MEngineMinicraft : public YEngine {
 private:
@@ -281,6 +282,15 @@ public :
 
 		avatar = new MAvatar(Renderer->Camera, world);
 		avatar->vbo = createVBO();
+
+
+		/*YVec3f startLine;
+		YVec3f endLine = YVec3f(1, 1, 1);
+
+		YVec3f pointInPlan = YVec3f(0.5f, 0.5f, 0.5f);
+		YVec3f planeNormal = (pointInPlan).cross(YVec3f(0.75f, 0.5f, 0.5f));
+
+		Physics::isIntersecting(startLine, endLine, pointInPlan, planeNormal);*/
 	}
 
 
@@ -394,6 +404,9 @@ public :
 		world->update();
 		avatar->update(elapsed);
 		Renderer->Camera->moveTo(avatar->Position + Renderer->Camera->Direction + YVec3f(0, 0, avatar->CurrentHeight / 2));
+
+		if (isLeftClicking)
+			avatar->RayCast();
 	}
 
 	void renderObjects() 
@@ -413,10 +426,7 @@ public :
 		glVertex3d(0, 0, 10000);
 		glEnd();		
 
-		if (isLeftClicking)
-			avatar->updateRaycast();
-	
-			avatar->RayCast();
+		
 		
 		glPushMatrix();
 		

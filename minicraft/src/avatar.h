@@ -81,26 +81,38 @@ public:
 		droite = false;
 	}
 
-	void updateRaycast()
+
+	void RayCast()
 	{
 		startPos = Cam->Position;
 		endPos = (Cam->LookAt - startPos).normalize() + startPos;
 
-	}
+		MChunk* chunk = World->getChunkAt(Position.X / MChunk::CHUNK_SIZE, Position.Y / MChunk::CHUNK_SIZE, Position.Z / MChunk::CHUNK_SIZE);
 
-	void RayCast()
-	{
-		//YVec3f viewDirection =  Cam->Direction - Position;
-		//viewDirection = viewDirection.normalize();
+		if(chunk != nullptr)
+		{
+			MCube** cubeXPrev = NULL;
+			MCube** cubeXNext = NULL;
+			MCube** cubeYPrev = NULL;
+			MCube** cubeYNext = NULL;
+			MCube** cubeZPrev = NULL;
+			MCube** cubeZNext = NULL;
+			
+			chunk->get_surrounding_cubes(Position.X, Position.Y, Position.Z,
+				cubeXPrev, cubeXNext, cubeYPrev, cubeYNext, cubeZPrev, cubeZNext);
 
+			//todo: discard cube that the avatar is not facing towards
+
+			if(*cubeXNext != NULL)
+			{
+				if((*cubeXNext)->isSolid()) // can be broken
+				{
+					
+				}
+			}
+		}
 		
-		glBegin(GL_LINES);
-		glColor3d(1, 1, 1);
 		
-		glVertex3f(startPos.X, startPos.Y, startPos.Z);
-		glVertex3f(endPos.X, endPos.Y, endPos.Z);
-		
-		glEnd();
 	}
 	
 	void update(float elapsed)

@@ -71,6 +71,9 @@
     <ClInclude Include="dumber_perlin.h">
       <Filter>Fichiers d%27en-tête\engine\noise</Filter>
     </ClInclude>
+    <ClInclude Include="physics.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
