@@ -189,6 +189,7 @@ public :
 			{
 				chunk->disableHiddenCubes();
 				chunk->toVbos();
+				chunk->sendToGPU();
 			}
 		}
 	}

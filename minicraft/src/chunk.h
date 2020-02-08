@@ -411,7 +411,11 @@ class MChunk
 
 		MCube* getCubeAt(int x, int y, int z)
 		{
-			return &_Cubes[x][y][z];
+			if(x >= 0 && x <= CHUNK_SIZE
+				&& y >= 0 && y <= CHUNK_SIZE
+				&& z >= 0 && z <= CHUNK_SIZE)
+					return &_Cubes[x][y][z];
+			return nullptr;
 		}
 
 		void saveToDisk()
