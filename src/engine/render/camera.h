@@ -153,8 +153,7 @@ public:
 		Direction.rotate(UpVec, angle);
 		LookAt = Position + (Direction * 2.0f);
 
-		RightVec = Direction.cross(UpRef).normalize();
-		UpVec = RightVec.cross(Direction).normalize();
+		updateVecs();
 	}
 
 	/**
@@ -165,8 +164,7 @@ public:
 		Direction.rotate(RightVec, angle);
 		LookAt = Position + (Direction * 2.0f);
 
-		RightVec = Direction.cross(UpRef).normalize();
-		UpVec = RightVec.cross(Direction).normalize();
+		updateVecs();
 	}
 
 	/**

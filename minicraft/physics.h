@@ -20,6 +20,8 @@ public:
 		float beta = planeNormal.dot(startLine) + d;
 		float alpha = planeNormal.dot(endLine-startLine);
 
+		if (alpha == 0) return false;
+		
 		t = -beta / alpha;
 
 		return t > 0 && t <= 1;
@@ -29,18 +31,18 @@ public:
 	{
 		float t = 0;
 
-		YVec3f planNormal = A.cross(B);
+		YVec3f planNormal = (A - B).cross(C - B);
 		
 		if (isIntersecting(startLine, endLine, A, planNormal, t))
 		{
 			YVec3f P = startLine + ((endLine - startLine) * t);
 
-			YVec3f ABAP = (A - B).cross(A - P);
-			YVec3f BCBP = (B - C).cross(B - P);
-			YVec3f CDCP = (C - D).cross(C - P);
-			YVec3f DADP = (D - A).cross(D - P);
+			YVec3f ABAP = (B - A).cross(P - A);
+			YVec3f BCBP = (C - B).cross(P - B);
+			YVec3f CDCP = (D - C).cross(P - C);
+			YVec3f DADP = (A - D).cross(P - D);
 
-			if (ABAP.dot(BCBP) > 0 && BCBP.dot(CDCP) > 0 && CDCP.dot(DADP) > 0)
+			if (ABAP.dot(BCBP) >= 0 && BCBP.dot(CDCP) >= 0 && CDCP.dot(DADP) >= 0)
 				return true;
 			return false;
 		}

@@ -42,6 +42,8 @@ private:
 
 	MAvatar* avatar;
 
+	YVbo* cubeDebug;
+	
 public :
 	//Gestion singleton
 	static YEngine * getInstance()
@@ -283,14 +285,9 @@ public :
 		avatar = new MAvatar(Renderer->Camera, world);
 		avatar->vbo = createVBO();
 
+		cubeDebug = createVBO();
 
-		/*YVec3f startLine;
-		YVec3f endLine = YVec3f(1, 1, 1);
-
-		YVec3f pointInPlan = YVec3f(0.5f, 0.5f, 0.5f);
-		YVec3f planeNormal = (pointInPlan).cross(YVec3f(0.75f, 0.5f, 0.5f));
-
-		Physics::isIntersecting(startLine, endLine, pointInPlan, planeNormal);*/
+		ShaderCubeDebug = Renderer->createProgram("shaders/cube_debug");
 	}
 
 
@@ -403,7 +400,7 @@ public :
 
 		world->update();
 		avatar->update(elapsed);
-		Renderer->Camera->moveTo(avatar->Position + Renderer->Camera->Direction + YVec3f(0, 0, avatar->CurrentHeight / 2));
+		Renderer->Camera->moveTo(avatar->Position + Renderer->Camera->Direction + YVec3f(0, 0, avatar->CurrentHeight * 0.75f));
 
 		if (isLeftClicking)
 			avatar->RayCast();
@@ -426,6 +423,26 @@ public :
 		glVertex3d(0, 0, 10000);
 		glEnd();		
 
+		//glPushMatrix();
+
+		auto pos = Renderer->Camera->Direction * 10 + Renderer->Camera->Position;
+		//glTranslatef(pos.X, pos.Y, pos.Z);
+
+		/*glUseProgram(ShaderCubeDebug); //Demande au GPU de charger ces shaders
+		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
+		Renderer->sendMatricesToShader(ShaderCubeDebug);
+
+		cubeDebug->render();*/
+	
+		//glPopMatrix();
+
+		
+		/*glBegin(GL_LINES);
+		glColor3d(1, 0, 0);
+		glVertex3d(pos.X, pos.Y, pos.Z);
+		glVertex3d(Renderer->Camera->Position.X, Renderer->Camera->Position.X, Renderer->Camera->Position.X);
+		
+		glEnd();*/
 		
 		
 		glPushMatrix();
@@ -438,8 +455,8 @@ public :
 		glUniform3f(shaderColorLocation, sunColor.R, sunColor.V, sunColor.B);
 			//Envoie les matrices au shader
 		vbo->render();
-
 		glPopMatrix();
+		
 
 		world->render_world_vbo(true, true);
 
@@ -447,6 +464,7 @@ public :
 	
 		glTranslatef(avatar->Position.X - avatar->Width / 2, avatar->Position.Y - avatar->Width / 2, avatar->Position.Z - avatar->CurrentHeight / 2);
 		glScalef(avatar->Width, avatar->Width, avatar->CurrentHeight);
+		glUseProgram(ShaderCubeDebug);
 		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
 		Renderer->sendMatricesToShader(ShaderCubeDebug);
 		avatar->vbo->render();

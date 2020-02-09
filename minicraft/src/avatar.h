@@ -28,6 +28,8 @@ public:
 
 	float maxSpeed = 70;
 
+	const int maxRaycastDistance = 5;
+
 	YCamera * Cam;
 	MWorld * World;
 
@@ -86,7 +88,7 @@ public:
 	void RayCast()
 	{
 		startPos = Cam->Position;
-		endPos = Cam->Direction * 5 + startPos;
+		endPos = (Cam->Position + Cam->Direction * 5);
 
 		int xAvatar, yAvatar, zAvatar;
 
@@ -96,16 +98,18 @@ public:
 		
 		MChunk* chunk = World->getChunkAt(xAvatar, yAvatar, zAvatar);
 
+		
+
 		if(chunk != nullptr) // if in a chunk
 		{
-			int xDeb = ( (int)Position.X % MChunk::CHUNK_SIZE )- 5;
-			int yDeb = ((int)Position.Y % MChunk::CHUNK_SIZE) - 5;
-			int zDeb = ((int)Position.Z % MChunk::CHUNK_SIZE) - 5;
+			int xDeb = ( (int)Position.X % MChunk::CHUNK_SIZE )- maxRaycastDistance;
+			int yDeb = ((int)Position.Y % MChunk::CHUNK_SIZE) - maxRaycastDistance;
+			int zDeb = ((int)Position.Z % MChunk::CHUNK_SIZE) - maxRaycastDistance;
 
 			
-			int xFin = ((int)Position.X % MChunk::CHUNK_SIZE) + 5;
-			int yFin = ((int)Position.Y % MChunk::CHUNK_SIZE) + 5;
-			int zFin = ((int)Position.Z % MChunk::CHUNK_SIZE) + 5;
+			int xFin = ((int)Position.X % MChunk::CHUNK_SIZE) + maxRaycastDistance;
+			int yFin = ((int)Position.Y % MChunk::CHUNK_SIZE) + maxRaycastDistance;
+			int zFin = ((int)Position.Z % MChunk::CHUNK_SIZE) + maxRaycastDistance;
 			
 			//todo: discard cube that the avatar is not facing towards
 
