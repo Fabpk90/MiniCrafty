@@ -532,9 +532,20 @@ public :
 
 	void mouseClick(int button, int state, int x, int y, bool inUi)
 	{
-		isRightClicking = button == 2 && state == 0;
-		isMiddleClicking = button == 1 && state == 0;
-		isLeftClicking = button == 0 && state == 0;
+		if(button == 2)
+		{
+			isRightClicking = state == 0;
+		}
+		else if(button == 1)
+		{
+			isMiddleClicking = state == 0;
+		}
+		else if(button == 0)
+		{
+			isLeftClicking = state == 0;
+		}
+		
+	
 		if (isRightClicking)
 		{
 			showMouse(false);
