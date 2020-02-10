@@ -39,6 +39,7 @@ private:
 	MWorld* world;
 
 	GUILabel* camPosition;
+	GUILabel* crosshair;
 
 	MAvatar* avatar;
 
@@ -280,7 +281,13 @@ public :
 
 		camPosition->X = 150;
 
+		crosshair = new GUILabel();
+		crosshair->Text = "+";
+		crosshair->X = BaseWidth / 2;
+		crosshair->Y = BaseHeight / 2;
+
 		this->ScreenStats->addElement(camPosition);
+		ScreenJeu->addElement(crosshair);
 
 		avatar = new MAvatar(Renderer->Camera, world);
 		avatar->vbo = createVBO();
@@ -422,28 +429,6 @@ public :
 		glVertex3d(0, 0, 0);
 		glVertex3d(0, 0, 10000);
 		glEnd();		
-
-		//glPushMatrix();
-
-		auto pos = Renderer->Camera->Direction * 10 + Renderer->Camera->Position;
-		//glTranslatef(pos.X, pos.Y, pos.Z);
-
-		/*glUseProgram(ShaderCubeDebug); //Demande au GPU de charger ces shaders
-		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
-		Renderer->sendMatricesToShader(ShaderCubeDebug);
-
-		cubeDebug->render();*/
-	
-		//glPopMatrix();
-
-		
-		/*glBegin(GL_LINES);
-		glColor3d(1, 0, 0);
-		glVertex3d(pos.X, pos.Y, pos.Z);
-		glVertex3d(Renderer->Camera->Position.X, Renderer->Camera->Position.X, Renderer->Camera->Position.X);
-		
-		glEnd();*/
-		
 		
 		glPushMatrix();
 		
@@ -470,8 +455,6 @@ public :
 		avatar->vbo->render();
 		
 		glPopMatrix();
-
-		
 	}
 
 	void resize(int width, int height) {
@@ -552,7 +535,7 @@ public :
 		isRightClicking = button == 2 && state == 0;
 		isMiddleClicking = button == 1 && state == 0;
 		isLeftClicking = button == 0 && state == 0;
-		if (isRightClicking || isMiddleClicking)
+		if (isRightClicking)
 		{
 			showMouse(false);
 			glutWarpPointer(BaseWidth >> 1, BaseHeight >> 1);
