@@ -10,7 +10,6 @@
 #include <thread>
 #include <mutex>
 
-#include "engine_minicraft.h"
 #include "../dumber_perlin.h"
 
 class MWorld
@@ -220,7 +219,7 @@ public :
 		YDumberPerlin n = YDumberPerlin();
 		n.updateVecs();
 
-		//n.setZDecay(MWorld::MAT_HEIGHT_CUBES - 5, 0.5f);
+		n.setZDecay(MWorld::MAT_HEIGHT_CUBES - 5, 0.5f);
 		
 		while(!chunkList.empty())
 		{
@@ -273,14 +272,23 @@ public :
 						for (int y = 0; y <  MChunk::CHUNK_SIZE; y++)
 							for (int z = 0; z < MChunk::CHUNK_SIZE; z++)
 							{
-								auto cube = chunk->getCubeAt(x, y, z);
+								n.DoPenaltyMiddle = true;
+								n.setFreq(0.04f);
+								float val = n.sample((float)x, (float)y, (float)z);
+								n.DoPenaltyMiddle = false;
+								n.setFreq(0.2f);
+								val -= (1.0f - max(val, n.sample((float)x, (float)y, (float)z))) / 20.0f;
 
-								float perlin = n.sample((x + chunk->_XPos * MChunk::CHUNK_SIZE),
-									(y + chunk->_YPos * MChunk::CHUNK_SIZE),
-									(z + chunk->_ZPos * MChunk::CHUNK_SIZE));
+								MCube * cube = chunk->getCubeAt(x, y, z);
 
-								if (perlin > 0.5f)
-									cube->setType(MCube::CUBE_PIERRE);
+								if (val > 0.5f)
+									cube->setType(MCube::CUBE_HERBE);
+								if (val > 0.51f)
+									cube->setType(MCube::CUBE_TERRE);
+								if (val < 0.5 && z <= 0.1)
+									cube->setType(MCube::CUBE_EAU);
+								if (val > 0.56)
+									cube->setType(MCube::CUBE_EAU);
 							}
 				}
 
@@ -718,11 +726,16 @@ public :
 	void render_world_vbo(bool debug,bool doTransparent)
 	{
 		const std::lock_guard<std::mutex> lock(chunkierMutex);
-		glUseProgram(shaderProgram);
+		//glUseProgram(shaderProgram);
 		
 		texture->setAsShaderInput(shaderProgram);
 		YEngine::getInstance()->Renderer->updateMatricesFromOgl();
 		YEngine::getInstance()->Renderer->sendMatricesToShader(shaderProgram);
+
+		GLint var = glGetUniformLocation(shaderProgram, "elapsed");
+		glUniform1f(var, YEngine::DeltaTimeCumul);
+
+		
 		
 
 		glDisable(GL_BLEND);

@@ -1,7 +1,7 @@
 #pragma once
 #include "engine/noise/perlin.h"
 
-/*class YDumberPerlin : public YPerlin
+class YDumberPerlin : public YPerlin
 {
 public:
 
@@ -59,9 +59,9 @@ public:
 
 		return min(1, max(0, sample));
 	}
-};*/
+};
 
-class YDumberPerlin : public YPerlin
+/*class YDumberPerlin : public YPerlin
 {
 public:
 
@@ -88,4 +88,4 @@ public:
 
 		return val / 120;
 	}
-};
+};*/

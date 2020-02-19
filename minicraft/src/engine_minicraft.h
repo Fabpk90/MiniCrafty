@@ -36,7 +36,7 @@ private:
 	bool isQing;
 	bool isDing;
 
-	MWorld* world;
+	MWorld* world = nullptr;
 
 	GUILabel* camPosition;
 	GUILabel* crosshair;
@@ -58,7 +58,8 @@ public :
 
 	/*HANDLERS GENERAUX*/
 	void loadShaders() {
-		
+		if(world != nullptr)
+			world->shaderProgram = YEngine::getInstance()->Renderer->createProgram("shaders/world");
 	}
 
 	YVbo* createVBO()
@@ -348,7 +349,7 @@ public :
 	{
 		//On recup la direciton du soleil
 		bool nuit = getSunDirFromDayTime(sunDirection, 6.0f * 60.0f, 19.0f * 60.0f, boostTime);
-		sunPosition = sunDirection * 2;
+		sunPosition = sunDirection * 200;
 
 		//Pendant la journée
 		if (!nuit)
@@ -433,6 +434,7 @@ public :
 		glPushMatrix();
 		
 		glTranslatef(sunPosition.X, sunPosition.Y, sunPosition.Z);
+		glScalef(10, 10, 10);
 
 		glUseProgram(ShaderSun); //Demande au GPU de charger ces shaders
 		Renderer->updateMatricesFromOgl(); //Calcule toute les matrices à partir des deux matrices OGL
@@ -441,8 +443,20 @@ public :
 			//Envoie les matrices au shader
 		vbo->render();
 		glPopMatrix();
-		
 
+		glUseProgram(world->shaderProgram);
+		GLint v = glGetUniformLocation(world->shaderProgram, "lightDir");
+		glUniform3f(v, sunDirection.X, sunDirection.Y, sunDirection.Z);
+
+		GLint s = glGetUniformLocation(world->shaderProgram, "skyColor");
+		glUniform3f(s, skyColor.R, skyColor.V, skyColor.B);
+
+		s = glGetUniformLocation(world->shaderProgram, "sunColor");
+		glUniform3f(s, sunColor.R, sunColor.V, sunColor.B);
+
+		GLint c = glGetUniformLocation(world->shaderProgram, "camPos");
+		glUniform3f(c, Renderer->Camera->Position.X, Renderer->Camera->Position.Y, Renderer->Camera->Position.Z);
+	
 		world->render_world_vbo(true, true);
 
 		glPushMatrix();
