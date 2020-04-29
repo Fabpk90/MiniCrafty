@@ -29,10 +29,46 @@ void main (void)
 	//Permet de scaler la profondeur
 	depth = LinearizeDepth(depth);
 
+	float nbPixels = 0;
+	vec3 sumPixel = vec3(0);
+	float size = 2;
+	float totalIte = 0;
+
+	for(float x= -size; x<= size; x++)
+	{
+		for(float y = -size; y <= size; y++)
+		{
+			totalIte++;
+			vec2 delta = vec2(x * xstep, y * ystep);
+			sumPixel += texture2D(TexColor, uv + delta).rgb;
+		}
+	}
+
+	//sumPixel /= totalIte;
+
+	//color.rgb = sumPixel;
+
+	vec3 colorSobel = vec3(0);
+	float depthSobel = 0;
+	size = 1;
+    nbPixels = 0;
+    float depthSSAO = 0;
+    for(float x = -size; x<=size; x++)    
+    {
+        for(float y = -size; y<=size;y++)
+        {
+            nbPixels++;
+            vec2 delta = vec2(x*xstep, y*ystep)*1;
+            depthSSAO += max(-0.01, min(0.001, depth - LinearizeDepth(texture2D(TexDepth, uv +delta).r)));
+        }
+    }
+
+    depthSobel -= nbPixels * depth;
+    colorSobel -= nbPixels * color.rgb;
+
+	color.rgb /= 1+((depthSSAO*20));
+
     //Gamma correction
-    color.r = pow(color.r,1.0/2.2);
-    color.g = pow(color.g,1.0/2.2);
-    color.b = pow(color.b,1.0/2.2);
 
 	color_out = vec4(color.rgb,1.0);
 }

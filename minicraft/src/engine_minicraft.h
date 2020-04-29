@@ -18,6 +18,8 @@ private:
 	GLuint ShaderSun;
 	GLuint shaderColorLocation;
 
+	GLuint shaderPostProc;
+
 	YColor sunColor;
 	YColor skyColor;
 
@@ -44,6 +46,9 @@ private:
 	MAvatar* avatar;
 
 	YVbo* cubeDebug;
+	YFbo* fbo;
+
+	float boostTime = 0;
 	
 public :
 	//Gestion singleton
@@ -60,6 +65,8 @@ public :
 	void loadShaders() {
 		if(world != nullptr)
 			world->shaderProgram = YEngine::getInstance()->Renderer->createProgram("shaders/world");
+
+		shaderPostProc = Renderer->createProgram("shaders/postprocess");
 	}
 
 	YVbo* createVBO()
@@ -296,6 +303,11 @@ public :
 		cubeDebug = createVBO();
 
 		ShaderCubeDebug = Renderer->createProgram("shaders/cube_debug");
+
+		fbo = new YFbo();
+		fbo->init(BaseWidth, BaseHeight);
+
+		shaderPostProc = Renderer->createProgram("shaders/postprocess");
 	}
 
 
@@ -387,7 +399,7 @@ public :
 
 	void update(float elapsed) 
 	{
-		updateLights();
+		updateLights(boostTime);
 		
 
 		if (ScreenStats->_Active)
@@ -416,6 +428,7 @@ public :
 
 	void renderObjects() 
 	{
+		fbo->setAsOutFBO(true);
 		glUseProgram(0);
 		//Rendu des axes
 		glDisable(GL_LIGHTING);
@@ -433,7 +446,7 @@ public :
 		
 		glPushMatrix();
 		
-		glTranslatef(sunPosition.X, sunPosition.Y, sunPosition.Z);
+		glTranslatef((sunPosition.X - 5) + avatar->Position.X, (sunPosition.Y - 5) + avatar->Position.Y, (sunPosition.Z - 5) + avatar->Position.Z);
 		glScalef(10, 10, 10);
 
 		glUseProgram(ShaderSun); //Demande au GPU de charger ces shaders
@@ -469,10 +482,22 @@ public :
 		avatar->vbo->render();
 		
 		glPopMatrix();
+
+		fbo->setAsOutFBO(false);
+
+		glUseProgram(shaderPostProc);
+
+		fbo->setColorAsShaderInput(0, GL_TEXTURE0, "TexColor");
+		fbo->setDepthAsShaderInput(GL_TEXTURE1, "TexDepth");
+
+		Renderer->sendNearFarToShader(shaderPostProc);
+		Renderer->sendScreenSizeToShader(shaderPostProc);
+		
+		Renderer->drawFullScreenQuad();
 	}
 
 	void resize(int width, int height) {
-	
+		fbo->resize(width, height);
 	}
 
 	/*INPUTS*/
@@ -500,6 +525,13 @@ public :
 				break;
 			case 32: //space
 				avatar->Jump = down;
+				break;
+
+			case 'g':
+				boostTime += 5;
+				break;
+			case 'h':
+				boostTime -= 5;
 				break;
 			}
 		}

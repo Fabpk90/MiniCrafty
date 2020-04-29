@@ -29,15 +29,15 @@ float waterNoise(vec4 v)
 	vec2 dir = vec2(v.x, v.y);
 
 	float d = dot(vec2(1, 1), dir);
-	float n = sin(d + elapsed) / 2;
+	float n = (1+sin(d + elapsed)) / 4;
 
 	d = dot(vec2(1, .5), dir);
-	n += sin(d + elapsed) / 4;
+	n += (1+sin(d + elapsed)) / 2;
 
 	d = dot(vec2(.5, 1), dir);
-	n += sin(d + elapsed) / 4;
+	n += (1+ sin(d + elapsed)) / 4;
 
-	return n;
+	return n / 2.75;
 }
 
 void main()
@@ -62,7 +62,7 @@ void main()
 	else if(vs_type_in == CUBE_EAU)
 	 {
 		color = vec4(0.0,0.0,1.0,0.5);	
-		vecInW.z += waterNoise(vecInW);
+		vecInW.z -= waterNoise(vecInW);
 	 }
 
 	 type = int(vs_type_in);
